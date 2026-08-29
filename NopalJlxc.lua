@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — BETA CPB JELYZX (FIXED SPEED & SMOOTH DESYNC BLINK + SPECTATE & FREECAM)
+-- NOPAL JLXC — BETA CPB JELYZX (FREECAM BUTTONS & ANTI-SPECTATE ADMIN)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -97,6 +97,7 @@ local State = {
     
     SpawnFullHealth = false,
     InvisibleMode = false,
+    AntiSpectateAdmin = false, -- FITUR BARU ANTI SPECTATE ADMIN
 
     CustomCrosshair = false,
     CrosshairType = "Silang (+)",
@@ -134,7 +135,6 @@ local State = {
     FlyUp = false,
     FlyDown = false,
 
-    -- DESYNC BLINK SYSTEM
     SmoothMovement = false,
     SmoothFactor = 0.25,
     FiveMBlink = false,
@@ -150,12 +150,15 @@ local State = {
     SpectateIndex = 1,
     SpectateHidden = false,
 
-    -- FREECAM SYSTEM
+    -- FREECAM SYSTEM (UI DIREVISI TANPA ANALOG)
     FreecamEnabled = false,
     FreecamSpeed = 50,
     FreecamUp = false,
     FreecamDown = false,
-    FreecamVector = Vector2.new(0, 0),
+    FreecamForward = false,
+    FreecamBackward = false,
+    FreecamLeft = false,
+    FreecamRight = false,
 
     AntiAFK = true,
     ScriptActive = true
@@ -170,7 +173,7 @@ local function isAdminPlayer(plr)
         if game.PlaceId and plr:GetRankInGroup(game.PlaceId) > 100 then return true end
     end)
     local name = plr.Name:lower()
-    if name:find("admin") or name:find("mod") or name:find("owner") or name:find("dev") then return true end
+    if name:find("admin") or name:find("mod") or name:find("owner") or name:find("dev") or name:find("staff") then return true end
     if plr.Character and (plr.Character:FindFirstChild("AdminTitle") or plr.Character:FindFirstChild("StaffTag")) then return true end
     return false
 end
@@ -426,7 +429,7 @@ btnSpecShowMini.MouseButton1Click:Connect(function()
     btnSpecShowMini.Visible = false
 end)
 
--- FREECAM TOUCH UI SYSTEM
+-- FREECAM TOUCH UI SYSTEM (TANPA ANALOG -> MENGGUNAKAN TOMBOL DIREKSI KANAN/KIRI/MAJU/MUNDUR)
 local freecamUI = Instance.new("Frame")
 freecamUI.Name = "FreecamControlsUI"
 freecamUI.Size = UDim2.new(1, 0, 1, 0)
@@ -434,70 +437,60 @@ freecamUI.BackgroundTransparency = 1
 freecamUI.Visible = false
 freecamUI.Parent = gui
 
--- FREECAM ANALOG
-local analogBase = Instance.new("Frame")
-analogBase.Size = UDim2.new(0, 110, 0, 110)
-analogBase.Position = UDim2.new(0, 20, 1, -130)
-analogBase.BackgroundColor3 = Color3.fromRGB(12, 15, 24)
-analogBase.BackgroundTransparency = 0.4
-analogBase.Parent = freecamUI
-Instance.new("UICorner", analogBase).CornerRadius = UDim.new(1, 0)
-local analogStroke = Instance.new("UIStroke", analogBase)
-analogStroke.Color = Color3.fromRGB(0, 240, 255)
-analogStroke.Thickness = 1.5
+-- FREECAM DIRECTIONAL BUTTONS (SISI KIRI)
+local freecamDirFrame = Instance.new("Frame")
+freecamDirFrame.Size = UDim2.new(0, 140, 0, 140)
+freecamDirFrame.Position = UDim2.new(0, 15, 1, -155)
+freecamDirFrame.BackgroundColor3 = Color3.fromRGB(12, 15, 24)
+freecamDirFrame.BackgroundTransparency = 0.4
+freecamDirFrame.Parent = freecamUI
+Instance.new("UICorner", freecamDirFrame).CornerRadius = UDim.new(0, 16)
+local fcDirStroke = Instance.new("UIStroke", freecamDirFrame)
+fcDirStroke.Color = Color3.fromRGB(0, 240, 255)
+fcDirStroke.Thickness = 1.5
 
-local analogStick = Instance.new("Frame")
-analogStick.Size = UDim2.new(0, 42, 0, 42)
-analogStick.Position = UDim2.new(0.5, -21, 0.5, -21)
-analogStick.BackgroundColor3 = Color3.fromRGB(255, 45, 65)
-analogStick.BackgroundTransparency = 0.2
-analogStick.Parent = analogBase
-Instance.new("UICorner", analogStick).CornerRadius = UDim.new(1, 0)
-
-local analogDragging = false
-local function updateAnalog(inputPos)
-    local center = analogBase.AbsolutePosition + Vector2.new(55, 55)
-    local delta = inputPos - center
-    local dist = delta.Magnitude
-    local maxRadius = 40
-    
-    if dist > maxRadius then
-        delta = delta.Unit * maxRadius
-    end
-    
-    analogStick.Position = UDim2.new(0.5, delta.X - 21, 0.5, delta.Y - 21)
-    State.FreecamVector = Vector2.new(delta.X / maxRadius, -delta.Y / maxRadius)
+local function makeFCBtn(name, text, pos, color)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Size = UDim2.new(0, 42, 0, 42)
+    btn.Position = pos
+    btn.BackgroundColor3 = Color3.fromRGB(20, 28, 45)
+    btn.Text = text
+    btn.TextColor3 = color or Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamBlack
+    btn.TextSize = 12
+    btn.Parent = freecamDirFrame
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    return btn
 end
 
-analogBase.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        analogDragging = true
-        updateAnalog(input.Position)
-    end
-end)
+local fcFwd  = makeFCBtn("FC_Fwd", "▲\nMAJU", UDim2.new(0.5, -21, 0, 6), Color3.fromRGB(0, 240, 255))
+local fcBack = makeFCBtn("FC_Back", "▼\nMDR", UDim2.new(0.5, -21, 1, -48), Color3.fromRGB(0, 240, 255))
+local fcLeft = makeFCBtn("FC_Left", "◄\nKIRI", UDim2.new(0, 6, 0.5, -21), Color3.fromRGB(0, 240, 255))
+local fcRight= makeFCBtn("FC_Right", "►\nKNR", UDim2.new(1, -48, 0.5, -21), Color3.fromRGB(0, 240, 255))
 
-UserInputService.InputChanged:Connect(function(input)
-    if analogDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        updateAnalog(input.Position)
-    end
-end)
+local function bindTouchBtn(btn, stateKey)
+    btn.MouseButton1Down:Connect(function() State[stateKey] = true end)
+    btn.MouseButton1Up:Connect(function() State[stateKey] = false end)
+    btn.InputEnded:Connect(function() State[stateKey] = false end)
+end
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        analogDragging = false
-        analogStick.Position = UDim2.new(0.5, -21, 0.5, -21)
-        State.FreecamVector = Vector2.new(0, 0)
-    end
-end)
+bindTouchBtn(fcFwd, "FreecamForward")
+bindTouchBtn(fcBack, "FreecamBackward")
+bindTouchBtn(fcLeft, "FreecamLeft")
+bindTouchBtn(fcRight, "FreecamRight")
 
--- FREECAM UP/DOWN BUTTONS
+-- FREECAM UP/DOWN BUTTONS (SISI KANAN)
 local freecamUpDown = Instance.new("Frame")
 freecamUpDown.Size = UDim2.new(0, 65, 0, 140)
-freecamUpDown.Position = UDim2.new(1, -80, 1, -160)
+freecamUpDown.Position = UDim2.new(1, -80, 1, -155)
 freecamUpDown.BackgroundColor3 = Color3.fromRGB(12, 15, 24)
 freecamUpDown.BackgroundTransparency = 0.4
 freecamUpDown.Parent = freecamUI
-Instance.new("UICorner", freecamUpDown).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", freecamUpDown).CornerRadius = UDim.new(0, 16)
+local fcUpDownStroke = Instance.new("UIStroke", freecamUpDown)
+fcUpDownStroke.Color = Color3.fromRGB(255, 45, 65)
+fcUpDownStroke.Thickness = 1.5
 
 local fcUp = Instance.new("TextButton")
 fcUp.Size = UDim2.new(0, 53, 0, 55)
@@ -521,13 +514,8 @@ fcDown.TextSize = 10
 fcDown.Parent = freecamUpDown
 Instance.new("UICorner", fcDown).CornerRadius = UDim.new(0, 10)
 
-fcUp.MouseButton1Down:Connect(function() State.FreecamUp = true end)
-fcUp.MouseButton1Up:Connect(function() State.FreecamUp = false end)
-fcUp.InputEnded:Connect(function() State.FreecamUp = false end)
-
-fcDown.MouseButton1Down:Connect(function() State.FreecamDown = true end)
-fcDown.MouseButton1Up:Connect(function() State.FreecamDown = false end)
-fcDown.InputEnded:Connect(function() State.FreecamDown = false end)
+bindTouchBtn(fcUp, "FreecamUp")
+bindTouchBtn(fcDown, "FreecamDown")
 
 -- MAIN UI PANEL
 local main = Instance.new("Frame")
@@ -1027,7 +1015,7 @@ local function addSelector(parent, text, options, defaultIndex, callback)
     end)
 end
 
--- TABS
+-- TAB CREATION
 local combatTab = createTab("Combat")
 local espTab = createTab("ESP Config")
 local resoTab = createTab("Resolusi")
@@ -1047,6 +1035,9 @@ addSlider(combatTab, "FOV Radius", 50, 1500, 150, function(v) State.FOVRadius = 
 addSelector(combatTab, "Warna FOV Circle", colorList, 1, function(v)
     State.FOVColor = ColorMap[v] or Color3.fromRGB(0, 240, 255)
 end)
+
+-- ANTI SPECTATE ADMIN & INVISIBLE SYSTEM
+addToggle(combatTab, "Anti-Spectate Admin/Staff", false, function(v) State.AntiSpectateAdmin = v end)
 
 addToggle(combatTab, "Invisible Mode (Full Ghost)", false, function(v) 
     State.InvisibleMode = v 
@@ -1129,8 +1120,8 @@ addSlider(moveTab, "Fly Speed", 20, 500, 100, function(v) State.FlySpeed = v end
 addToggle(moveTab, "Spinbot Karakter (Muter)", false, function(v) State.SpinBotEnabled = v end)
 addSlider(moveTab, "Kecepatan Muter (Spin)", 10, 300, 50, function(v) State.SpinSpeed = v end)
 
--- CAMERA & SPECTATE TOGGLES IN MOVEMENT TAB
-addToggle(moveTab, "Spectate Player UI", false, function(v)
+-- SPECTATE & FREECAM IN MOVEMENT TAB
+addToggle(moveTab, "Spectate Player System", false, function(v)
     State.SpectateEnabled = v
     spectateUI.Visible = v and not State.SpectateHidden
     btnSpecShowMini.Visible = v and State.SpectateHidden
@@ -1144,7 +1135,7 @@ addToggle(moveTab, "Spectate Player UI", false, function(v)
 end)
 
 local freecamCFrame = CFrame.new()
-addToggle(moveTab, "Freecam Mobile UI", false, function(v)
+addToggle(moveTab, "Freecam Mobile (UI Tombol)", false, function(v)
     State.FreecamEnabled = v
     freecamUI.Visible = v
     if v then
@@ -1480,6 +1471,29 @@ end
 local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     if not State.ScriptActive then return end
 
+    -- ANTI-SPECTATE SYSTEM UNTUK ADMIN / PLAYER LAIN
+    if State.AntiSpectateAdmin and LocalPlayer.Character then
+        local myChar = LocalPlayer.Character
+        local myHum = myChar:FindFirstChildOfClass("Humanoid")
+        
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and isAdminPlayer(plr) then
+                -- Memutus jika admin mencoba mengarahkan kamera ke karakter kita
+                if plr.Character then
+                    local pHum = plr.Character:FindFirstChildOfClass("Humanoid")
+                    if pHum and pHum.CameraSubject == myHum then
+                        pHum.CameraSubject = pHum
+                    end
+                end
+            end
+        end
+        
+        -- Proteksi posisi & transparansi lokal agar kamera lawan meleset
+        if myChar:FindFirstChild("HumanoidRootPart") then
+            myChar.HumanoidRootPart.CanQuery = false
+        end
+    end
+
     if State.InvisibleMode and LocalPlayer.Character then
         local myChar = LocalPlayer.Character
         for _, item in ipairs(myChar:GetDescendants()) do
@@ -1494,11 +1508,12 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         end
     end
 
-    -- FREECAM CALCULATION
+    -- FREECAM CALCULATION (MENGGUNAKAN TOMBOL DIREKSI BARU)
     if State.FreecamEnabled then
-        local moveDir = Vector3.new(State.FreecamVector.X, 0, -State.FreecamVector.Y)
-        local verticalDir = Vector3.new(0, (State.FreecamUp and 1 or 0) + (State.FreecamDown and -1 or 0), 0)
-        
+        local fwdVel = (State.FreecamForward and 1 or 0) - (State.FreecamBackward and 1 or 0)
+        local sideVel = (State.FreecamRight and 1 or 0) - (State.FreecamLeft and 1 or 0)
+        local upVel = (State.FreecamUp and 1 or 0) - (State.FreecamDown and 1 or 0)
+
         local speed = State.FreecamSpeed * deltaTime
         local frameCFrame = freecamCFrame
         
@@ -1506,7 +1521,7 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         local rightVector = frameCFrame.RightVector
         local upVector = Vector3.new(0, 1, 0)
         
-        local translation = (rightVector * moveDir.X) + (lookVector * moveDir.Z) + (upVector * verticalDir.Y)
+        local translation = (rightVector * sideVel) + (lookVector * fwdVel) + (upVector * upVel)
         freecamCFrame = frameCFrame + (translation * speed)
         Camera.CFrame = freecamCFrame
     else
