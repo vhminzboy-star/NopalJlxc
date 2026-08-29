@@ -172,14 +172,14 @@ local ColorMap = {
 }
 
 local State = {
-    AimbotEnabled = false,
+    AimjlxcEnabled = false,
     Smoothness = 0.15, 
     DirectLock = false,
     TargetPart = "Head",
     WallCheck = false,
-    FOVRadius = 150,
-    ShowFOV = false,
-    FOVColor = Color3.fromRGB(0, 240, 255),
+    AimPOVRadius = 150,
+    ShowAimPOV = false,
+    AimPOVColor = Color3.fromRGB(0, 240, 255),
     Prediction = false, 
     PredictionMult = 0.01,
     LockColor = Color3.fromRGB(255, 30, 30),
@@ -330,14 +330,14 @@ local function safeDrawingNew(class)
     return obj
 end
 
-local fovCircle = safeDrawingNew("Circle")
-if fovCircle then
-    fovCircle.Thickness = 1.5
-    fovCircle.NumSides = 64
-    fovCircle.Filled = false
-    fovCircle.Transparency = 0.85
-    fovCircle.Color = State.FOVColor
-    fovCircle.Visible = State.ShowFOV
+local aimPovCircle = safeDrawingNew("Circle")
+if aimPovCircle then
+    aimPovCircle.Thickness = 1.5
+    aimPovCircle.NumSides = 64
+    aimPovCircle.Filled = false
+    aimPovCircle.Transparency = 0.85
+    aimPovCircle.Color = State.AimPOVColor
+    aimPovCircle.Visible = State.ShowAimPOV
 end
 
 local chLines = {}
@@ -1280,16 +1280,16 @@ local moveTab = createTab("Movement")
 local colorList = {"Biru Cyan", "Hijau Neon", "Merah", "Kuning", "Ungu", "Pink Neon", "Oranye", "Putih", "Emas", "Lime", "Biru Tua"}
 
 -- COMBAT TAB
-addToggle(combatTab, "Camera Lock (Aimbot)", false, function(v) State.AimbotEnabled = v end)
+addToggle(combatTab, "Camera Lock (Aimjlxc)", false, function(v) State.AimjlxcEnabled = v end)
 addToggle(combatTab, "Instant Lock Mode", false, function(v) State.DirectLock = v end)
 addSlider(combatTab, "Smoothness Speed", 1, 50, 5, function(v) State.Smoothness = v / 50 end)
 addToggle(combatTab, "Movement Prediction", false, function(v) State.Prediction = v end)
 addToggle(combatTab, "Wall Check (Ultra Presisi)", false, function(v) State.WallCheck = v end)
 addSelector(combatTab, "Target Part", {"Head", "Torso", "HumanoidRootPart"}, 1, function(v) State.TargetPart = v end)
-addToggle(combatTab, "Show FOV Circle", false, function(v) State.ShowFOV = v end)
-addSlider(combatTab, "FOV Radius", 50, 1500, 150, function(v) State.FOVRadius = v end)
-addSelector(combatTab, "Warna FOV Circle", colorList, 1, function(v)
-    State.FOVColor = ColorMap[v] or Color3.fromRGB(0, 240, 255)
+addToggle(combatTab, "Show AimPOV Circle", false, function(v) State.ShowAimPOV = v end)
+addSlider(combatTab, "AimPOV Radius", 50, 1500, 150, function(v) State.AimPOVRadius = v end)
+addSelector(combatTab, "Warna AimPOV Circle", colorList, 1, function(v)
+    State.AimPOVColor = ColorMap[v] or Color3.fromRGB(0, 240, 255)
 end)
 
 addToggle(combatTab, "Anti Spectate Admin", true, function(v)
@@ -1465,7 +1465,7 @@ local function isCharacterAlive(char)
     return true
 end
 
-local function isTargetValidForAimbot(targetPart)
+local function isTargetValidForAimjlxc(targetPart)
     if not targetPart or not targetPart.Parent then return false end
     local char = targetPart.Parent
     if not isCharacterAlive(char) then return false end
@@ -1477,7 +1477,7 @@ local function isTargetValidForAimbot(targetPart)
     if not onScreen or screenPos.Z <= 0 then return false end
 
     local viewportCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    if (Vector2.new(screenPos.X, screenPos.Y) - viewportCenter).Magnitude > State.FOVRadius then return false end
+    if (Vector2.new(screenPos.X, screenPos.Y) - viewportCenter).Magnitude > State.AimPOVRadius then return false end
     
     if State.WallCheck and not checkWallObstructionBrutal(targetPart) then return false end
 
@@ -1485,16 +1485,16 @@ local function isTargetValidForAimbot(targetPart)
 end
 
 local function getBestTargetBrutal()
-    if CurrentActiveTarget and isTargetValidForAimbot(CurrentActiveTarget) then return CurrentActiveTarget end
+    if CurrentActiveTarget and isTargetValidForAimjlxc(CurrentActiveTarget) then return CurrentActiveTarget end
     local viewportCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    local closestPart, minDistance = nil, State.FOVRadius
+    local closestPart, minDistance = nil, State.AimPOVRadius
 
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character then
             if State.ESP_TeamCheck and plr.Team == LocalPlayer.Team then continue end
             local targetPart = getExactTargetPart(plr.Character)
             
-            if targetPart and isTargetValidForAimbot(targetPart) then
+            if targetPart and isTargetValidForAimjlxc(targetPart) then
                 local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
                 if onScreen and screenPos.Z > 0 then
                     local distFromCenter = (Vector2.new(screenPos.X, screenPos.Y) - viewportCenter).Magnitude
@@ -1775,7 +1775,7 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         freecamCFrame = CFrame.new(freecamCFrame.Position + worldMove) * rotCFrame
         Camera.CFrame = freecamCFrame
     elseif not State.SpectateEnabled then
-        if State.AimbotEnabled then
+        if State.AimjlxcEnabled then
             local targetPart = getBestTargetBrutal()
             if targetPart then
                 local targetPos = targetPart.Position
@@ -1817,11 +1817,11 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     end
 
     local viewportCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    if fovCircle then
-        fovCircle.Position = viewportCenter
-        fovCircle.Radius = State.FOVRadius
-        fovCircle.Color = CurrentActiveTarget and State.LockColor or State.FOVColor
-        fovCircle.Visible = State.ShowFOV and State.AimbotEnabled and not State.FreecamEnabled
+    if aimPovCircle then
+        aimPovCircle.Position = viewportCenter
+        aimPovCircle.Radius = State.AimPOVRadius
+        aimPovCircle.Color = CurrentActiveTarget and State.LockColor or State.AimPOVColor
+        aimPovCircle.Visible = State.ShowAimPOV and State.AimjlxcEnabled and not State.FreecamEnabled
     end
 
     hideAllCrosshair()
@@ -1989,10 +1989,10 @@ end)
 closeBtn.MouseButton1Click:Connect(function()
     State.ScriptActive = false
     toggleFreecamMode(false)
-    if fovCircle then fovCircle.Visible = false end
+    if aimPovCircle then aimPovCircle.Visible = false end
     hideAllCrosshair()
     pcall(function() 
-        if fovCircle then fovCircle:Remove() end
+        if aimPovCircle then aimPovCircle:Remove() end
         for _, l in ipairs(chLines) do if l then l:Remove() end end
         if chCircle then chCircle:Remove() end
     end)
