@@ -1,8 +1,9 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (ENHANCED FREECAM, SPECTATE & ANTI-SPECTATE ADMIN + PC SPOOFER)
+-- NOPAL JLXC — CPB JELYZX (ENHANCED SAFE BYPASS EDITION)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
+
 if _G.JelyzxConnections then
     for _, conn in ipairs(_G.JelyzxConnections) do
         pcall(function() conn:Disconnect() end)
@@ -10,8 +11,25 @@ if _G.JelyzxConnections then
 end
 _G.JelyzxConnections = {}
 
+-- Utility String Randomizer untuk Stealth Naming
+local function generateRandomName(length)
+    local chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    local res = ""
+    for i = 1, (length or 12) do
+        local rand = math.random(1, #chars)
+        res = res .. string.sub(chars, rand, rand)
+    end
+    return res
+end
+
+local SECURE_GUI_NAME = generateRandomName(16)
+
 local Services = setmetatable({}, {
-    __index = function(_, serviceName) return game:GetService(serviceName) end
+    __index = function(_, serviceName) 
+        local s
+        pcall(function() s = game:GetService(serviceName) end)
+        return s
+    end
 })
 
 local Players = Services.Players
@@ -27,12 +45,35 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
 -- ========================================================
--- [PC SPOOFER SYSTEM] — MEMALSUKAN DEVICE BEJALAN SEBAGAI PC
+-- [STEALTH PC SPOOFER SYSTEM WITH METATABLE BYPASS]
 -- ========================================================
 pcall(function()
-    -- Force UserInputService agar mendeteksi Keyboard & Mouse sebagai input utama
-    if UserInputService.TouchEnabled then
-        -- Hooking Metatable untuk memalsukan method platform
+    if hookmetamethod then
+        local oldIndex
+        oldIndex = hookmetamethod(game, "__index", function(self, index)
+            if not checkcaller() and self == UserInputService then
+                if index == "TouchEnabled" or index == "GyroscopeEnabled" or index == "AccelerometerEnabled" then
+                    return false
+                elseif index == "KeyboardEnabled" or index == "MouseEnabled" then
+                    return true
+                end
+            end
+            return oldIndex(self, index)
+        end)
+
+        local oldNamecall
+        oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+            local method = getnamecallmethod()
+            if not checkcaller() and self == UserInputService then
+                if method == "GetPlatform" then
+                    return Enum.Platform.Windows
+                elseif method == "GetLastInputType" then
+                    return Enum.UserInputType.Keyboard
+                end
+            end
+            return oldNamecall(self, ...)
+        end)
+    elseif setreadonly and getrawmetatable then
         local rawMetatable = getrawmetatable(game)
         local originalNamecall = rawMetatable.__namecall
         local originalIndex = rawMetatable.__index
@@ -74,8 +115,9 @@ local function getGuiParent()
     if not parent then
         pcall(function()
             if syn and syn.protect_gui then
-                syn.protect_gui(CoreGui)
-                parent = CoreGui
+                parent = Instance.new("Folder")
+                syn.protect_gui(parent)
+                parent.Parent = CoreGui
             end
         end)
     end
@@ -83,8 +125,13 @@ local function getGuiParent()
 end
 
 local parentGui = getGuiParent()
-local oldGui = parentGui:FindFirstChild("JELYZX_V20_FULL_GUI") or (LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("JELYZX_V20_FULL_GUI"))
-if oldGui then oldGui:Destroy() end
+
+-- Cleanup GUI lama berbasis class dan properties tersembunyi
+for _, old in ipairs(parentGui:GetChildren()) do
+    if old:IsA("ScreenGui") and old:FindFirstChild("IntroOverlay") then
+        pcall(function() old:Destroy() end)
+    end
+end
 
 -- ASSETS ID
 local RAW_ID = "111989994218720"
@@ -95,12 +142,14 @@ local SHOWCASE_LOGO_ID = "rbxthumb://type=Asset&id=" .. SHOWCASE_ID .. "&w=420&h
 -- SOUND SYSTEM
 local function playSound(soundId, volume)
     task.spawn(function()
-        local sound = Instance.new("Sound")
-        sound.SoundId = "rbxassetid://" .. tostring(soundId)
-        sound.Volume = volume or 0.5
-        sound.Parent = SoundService
-        sound:Play()
-        sound.Ended:Connect(function() sound:Destroy() end)
+        pcall(function()
+            local sound = Instance.new("Sound")
+            sound.SoundId = "rbxassetid://" .. tostring(soundId)
+            sound.Volume = volume or 0.5
+            sound.Parent = SoundService
+            sound:Play()
+            sound.Ended:Connect(function() sound:Destroy() end)
+        end)
     end)
 end
 
@@ -175,7 +224,6 @@ local State = {
     FlyUp = false,
     FlyDown = false,
 
-    -- FREECAM STATE
     FreecamEnabled = false,
     FreecamSpeed = 2,
     FreecamSens = 1.2,
@@ -189,14 +237,12 @@ local State = {
         Down = false
     },
 
-    -- SPECTATE SYSTEM STATE
     SpectateEnabled = false,
     SpectateTargetIndex = 1,
     SpectateTargetPlayer = nil,
     SpectateUIScale = 1.0,
     SpectateCardCollapsed = false,
 
-    -- DESYNC BLINK SYSTEM
     SmoothMovement = false,
     SmoothFactor = 0.25,
     FiveMBlink = false,
@@ -216,9 +262,11 @@ local ColorGodmode = Color3.fromRGB(255, 0, 128)
 
 local function isAdminPlayer(plr)
     if not plr then return false end
+    local res = false
     pcall(function()
-        if game.PlaceId and plr:GetRankInGroup(game.PlaceId) > 100 then return true end
+        if game.PlaceId and plr:GetRankInGroup(game.PlaceId) > 100 then res = true end
     end)
+    if res then return true end
     local name = plr.Name:lower()
     if name:find("admin") or name:find("mod") or name:find("owner") or name:find("dev") or name:find("staff") then return true end
     if plr.Character and (plr.Character:FindFirstChild("AdminTitle") or plr.Character:FindFirstChild("StaffTag")) then return true end
@@ -234,81 +282,96 @@ local function isGodmodePlayer(plr)
     return false
 end
 
--- ================= SYSTEM ANTI-SPECTATE ADMIN =================
+-- ANTI-SPECTATE SYSTEM BYPASS WRAPPER
 local function processAntiSpectateProtection()
     if not State.AntiSpectateAdmin or not State.ScriptActive then return end
-    
-    local myChar = LocalPlayer.Character
-    if not myChar then return end
-    local myHum = myChar:FindFirstChildOfClass("Humanoid")
-    local myRoot = myChar:FindFirstChild("HumanoidRootPart")
-    
-    if not State.FreecamEnabled and not State.SpectateEnabled then
-        if Camera.CameraSubject and Camera.CameraSubject ~= myHum and not Camera.CameraSubject:IsDescendantOf(myChar) then
-            Camera.CameraSubject = myHum
+    pcall(function()
+        local myChar = LocalPlayer.Character
+        if not myChar then return end
+        local myHum = myChar:FindFirstChildOfClass("Humanoid")
+        local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+        
+        if not State.FreecamEnabled and not State.SpectateEnabled then
+            if Camera.CameraSubject and Camera.CameraSubject ~= myHum and not Camera.CameraSubject:IsDescendantOf(myChar) then
+                Camera.CameraSubject = myHum
+            end
         end
-    end
 
-    if myRoot then
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LocalPlayer and isAdminPlayer(plr) then
-                local otherChar = plr.Character
-                if otherChar and otherChar:FindFirstChild("HumanoidRootPart") then
-                    local otherRoot = otherChar.HumanoidRootPart
-                    local dist = (otherRoot.Position - myRoot.Position).Magnitude
-                    
-                    if dist < 5 and otherRoot.Transparency > 0.7 then
-                        for _, part in ipairs(myChar:GetChildren()) do
-                            if part:IsA("BasePart") then
-                                part.LocalTransparencyModifier = 0
+        if myRoot then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer and isAdminPlayer(plr) then
+                    local otherChar = plr.Character
+                    if otherChar and otherChar:FindFirstChild("HumanoidRootPart") then
+                        local otherRoot = otherChar.HumanoidRootPart
+                        local dist = (otherRoot.Position - myRoot.Position).Magnitude
+                        
+                        if dist < 5 and otherRoot.Transparency > 0.7 then
+                            for _, part in ipairs(myChar:GetChildren()) do
+                                if part:IsA("BasePart") then
+                                    part.LocalTransparencyModifier = 0
+                                end
                             end
                         end
                     end
                 end
             end
         end
-    end
+    end)
 end
 
 local CurrentActiveTarget = nil
 
--- DRAWING CROSSHAIR & FOV
-local fovCircle = Drawing.new("Circle")
-fovCircle.Thickness = 1.5
-fovCircle.NumSides = 64
-fovCircle.Filled = false
-fovCircle.Transparency = 0.85
-fovCircle.Color = State.FOVColor
-fovCircle.Visible = State.ShowFOV
+-- SAFE DRAWING CREATOR (PROTECTED FROM DETECT)
+local function safeDrawingNew(class)
+    local obj = nil
+    pcall(function()
+        obj = Drawing.new(class)
+    end)
+    return obj
+end
+
+local fovCircle = safeDrawingNew("Circle")
+if fovCircle then
+    fovCircle.Thickness = 1.5
+    fovCircle.NumSides = 64
+    fovCircle.Filled = false
+    fovCircle.Transparency = 0.85
+    fovCircle.Color = State.FOVColor
+    fovCircle.Visible = State.ShowFOV
+end
 
 local chLines = {}
 for i = 1, 4 do
-    local l = Drawing.new("Line")
-    l.Thickness = 1.5
-    l.Visible = false
-    chLines[i] = l
+    local l = safeDrawingNew("Line")
+    if l then
+        l.Thickness = 1.5
+        l.Visible = false
+        chLines[i] = l
+    end
 end
 
-local chCircle = Drawing.new("Circle")
-chCircle.Thickness = 1.5
-chCircle.Filled = false
-chCircle.Visible = false
-
-local function hideAllCrosshair()
-    for _, l in ipairs(chLines) do l.Visible = false end
+local chCircle = safeDrawingNew("Circle")
+if chCircle then
+    chCircle.Thickness = 1.5
+    chCircle.Filled = false
     chCircle.Visible = false
 end
 
--- GUI BASE
+local function hideAllCrosshair()
+    for _, l in ipairs(chLines) do if l then l.Visible = false end end
+    if chCircle then chCircle.Visible = false end
+end
+
+-- GUI BASE WITH RANDOMIZED IDENTITY
 local gui = Instance.new("ScreenGui")
-gui.Name = "JELYZX_V20_FULL_GUI"
+gui.Name = SECURE_GUI_NAME
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Parent = parentGui
 
 -- FLY TOUCH UI
 local flyControls = Instance.new("Frame")
-flyControls.Name = "ModernFlyUI"
+flyControls.Name = generateRandomName(10)
 flyControls.Size = UDim2.new(0, 75, 0, 160)
 flyControls.Position = UDim2.new(1, -90, 0.5, -80)
 flyControls.BackgroundColor3 = Color3.fromRGB(12, 15, 24)
@@ -363,23 +426,23 @@ btnDown.MouseButton1Down:Connect(function() State.FlyDown = true end)
 btnDown.MouseButton1Up:Connect(function() State.FlyDown = false end)
 btnDown.InputEnded:Connect(function() State.FlyDown = false end)
 
--- ================= FREECAM UI SYSTEM =================
+-- FREECAM UI SYSTEM
 local freecamUI = Instance.new("Frame")
-freecamUI.Name = "FreecamControlsUI"
+freecamUI.Name = generateRandomName(10)
 freecamUI.Size = UDim2.new(1, 0, 1, 0)
 freecamUI.BackgroundTransparency = 1
 freecamUI.Visible = false
 freecamUI.Parent = gui
 
 local touchDragArea = Instance.new("TextButton")
-touchDragArea.Name = "TouchDragArea"
+touchDragArea.Name = generateRandomName(8)
 touchDragArea.Size = UDim2.new(1, 0, 1, 0)
 touchDragArea.BackgroundTransparency = 1
 touchDragArea.Text = ""
 touchDragArea.Parent = freecamUI
 
 local freecamContainer = Instance.new("Frame")
-freecamContainer.Name = "FreecamContainer"
+freecamContainer.Name = generateRandomName(8)
 freecamContainer.Size = UDim2.new(1, 0, 1, 0)
 freecamContainer.BackgroundTransparency = 1
 freecamContainer.Parent = freecamUI
@@ -388,7 +451,7 @@ local fcScaleConstraint = Instance.new("UIScale", freecamContainer)
 fcScaleConstraint.Scale = State.FreecamUIScale
 
 local padDir = Instance.new("Frame")
-padDir.Name = "DPadMovement"
+padDir.Name = generateRandomName(8)
 padDir.Size = UDim2.new(0, 130, 0, 130)
 padDir.Position = UDim2.new(0, 25, 1, -155)
 padDir.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
@@ -416,13 +479,13 @@ local function makeFcBtn(name, text, pos, size, dirKey)
     return btn
 end
 
-makeFcBtn("BtnFwd", "▲", UDim2.new(0.5, -18, 0, 6), UDim2.new(0, 36, 0, 36), "Forward")
-makeFcBtn("BtnBack", "▼", UDim2.new(0.5, -18, 1, -42), UDim2.new(0, 36, 0, 36), "Backward")
-makeFcBtn("BtnLeft", "◄", UDim2.new(0, 6, 0.5, -18), UDim2.new(0, 36, 0, 36), "Left")
-makeFcBtn("BtnRight", "►", UDim2.new(1, -42, 0.5, -18), UDim2.new(0, 36, 0, 36), "Right")
+makeFcBtn(generateRandomName(5), "▲", UDim2.new(0.5, -18, 0, 6), UDim2.new(0, 36, 0, 36), "Forward")
+makeFcBtn(generateRandomName(5), "▼", UDim2.new(0.5, -18, 1, -42), UDim2.new(0, 36, 0, 36), "Backward")
+makeFcBtn(generateRandomName(5), "◄", UDim2.new(0, 6, 0.5, -18), UDim2.new(0, 36, 0, 36), "Left")
+makeFcBtn(generateRandomName(5), "►", UDim2.new(1, -42, 0.5, -18), UDim2.new(0, 36, 0, 36), "Right")
 
 local padElev = Instance.new("Frame")
-padElev.Name = "ElevMovement"
+padElev.Name = generateRandomName(8)
 padElev.Size = UDim2.new(0, 55, 0, 120)
 padElev.Position = UDim2.new(1, -80, 1, -145)
 padElev.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
@@ -513,16 +576,16 @@ local function toggleFreecamMode(enable)
     end
 end
 
--- ================= SPECTATE UI SYSTEM =================
+-- SPECTATE UI SYSTEM
 local specUI = Instance.new("Frame")
-specUI.Name = "SpectateSystemUI"
+specUI.Name = generateRandomName(10)
 specUI.Size = UDim2.new(1, 0, 1, 0)
 specUI.BackgroundTransparency = 1
 specUI.Visible = false
 specUI.Parent = gui
 
 local specContainer = Instance.new("Frame")
-specContainer.Name = "SpecContainer"
+specContainer.Name = generateRandomName(8)
 specContainer.Size = UDim2.new(1, 0, 1, 0)
 specContainer.BackgroundTransparency = 1
 specContainer.Parent = specUI
@@ -673,40 +736,43 @@ end)
 -- UPDATE STATUS DATA TARGET SPECTATE REALTIME
 RunService.RenderStepped:Connect(function()
     if State.SpectateEnabled and State.SpectateTargetPlayer then
-        local targetPlr = State.SpectateTargetPlayer
-        local char = targetPlr.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        pcall(function()
+            local targetPlr = State.SpectateTargetPlayer
+            local char = targetPlr.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
-        if char and hum and hrp then
-            if Camera.CameraSubject ~= hum then
-                Camera.CameraSubject = hum
+            if char and hum and hrp then
+                if Camera.CameraSubject ~= hum then
+                    Camera.CameraSubject = hum
+                end
+
+                local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                local dist = myHrp and (myHrp.Position - hrp.Position).Magnitude or 0
+
+                local hp = math.floor(hum.Health)
+                local maxHp = math.floor(hum.MaxHealth)
+
+                local statusTags = {}
+                if isAdminPlayer(targetPlr) then table.insert(statusTags, "<font color=\"#FFD700\">[ADMIN/STAFF]</font>") end
+                if isGodmodePlayer(targetPlr) then table.insert(statusTags, "<font color=\"#FF0080\">[GODMODE]</font>") end
+                if targetPlr.Team then table.insert(statusTags, "<font color=\"#00F0FF\">[" .. tostring(targetPlr.Team.Name) .. "]</font>") end
+
+                if #statusTags == 0 then table.insert(statusTags, "<font color=\"#00FF96\">[PLAYER]</font>") end
+
+                targetNameLbl.Text = "TARGET: " .. targetPlr.Name .. " (@" .. targetPlr.DisplayName .. ")"
+                statusListLbl.Text = string.format("HP: %d/%d | DIST: %dm\nSTATUS: %s", hp, maxHp, math.floor(dist), table.concat(statusTags, " "))
+            else
+                targetNameLbl.Text = "TARGET: " .. targetPlr.Name .. " (DEAD)"
+                statusListLbl.Text = "HP: 0/0 | DIST: 0m\nSTATUS: RESPAWNING..."
             end
-
-            local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            local dist = myHrp and (myHrp.Position - hrp.Position).Magnitude or 0
-
-            local hp = math.floor(hum.Health)
-            local maxHp = math.floor(hum.MaxHealth)
-
-            local statusTags = {}
-            if isAdminPlayer(targetPlr) then table.insert(statusTags, "<font color=\"#FFD700\">[ADMIN/STAFF]</font>") end
-            if isGodmodePlayer(targetPlr) then table.insert(statusTags, "<font color=\"#FF0080\">[GODMODE]</font>") end
-            if targetPlr.Team then table.insert(statusTags, "<font color=\"#00F0FF\">[" .. tostring(targetPlr.Team.Name) .. "]</font>") end
-
-            if #statusTags == 0 then table.insert(statusTags, "<font color=\"#00FF96\">[PLAYER]</font>") end
-
-            targetNameLbl.Text = "TARGET: " .. targetPlr.Name .. " (@" .. targetPlr.DisplayName .. ")"
-            statusListLbl.Text = string.format("HP: %d/%d | DIST: %dm\nSTATUS: %s", hp, maxHp, math.floor(dist), table.concat(statusTags, " "))
-        else
-            targetNameLbl.Text = "TARGET: " .. targetPlr.Name .. " (DEAD)"
-            statusListLbl.Text = "HP: 0/0 | DIST: 0m\nSTATUS: RESPAWNING..."
-        end
+        end)
     end
 end)
 
 -- MAIN UI PANEL
 local main = Instance.new("Frame")
+main.Name = generateRandomName(12)
 main.Size = UDim2.new(0, 0, 0, 0)
 main.Position = UDim2.new(0.5, 0, 0.5, 0)
 main.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -857,10 +923,10 @@ percentText.Parent = introCard
 
 task.spawn(function()
     local steps = {
-        {p = 0.25, t = "INITIALIZING ENGINE CORE...", d = 0.8},
-        {p = 0.55, t = "SPOOFING DEVICE PLATFORM TO PC...", d = 0.8},
-        {p = 0.85, t = "OPTIMIZING FREECAM & ADVANCED SPECTATE...", d = 0.8},
-        {p = 1.00, t = "SYSTEM READY! WELCOME NOPAL JLXC", d = 0.5}
+        {p = 0.25, t = "INITIALIZING SECURE ENGINE CORE...", d = 0.8},
+        {p = 0.55, t = "SPOOFING DEVICE PLATFORM VIA SECURE HOOK...", d = 0.8},
+        {p = 0.85, t = "OPTIMIZING SAFE FREECAM & ADVANCED SPECTATE...", d = 0.8},
+        {p = 1.00, t = "BYPASS READY! WELCOME NOPAL JLXC", d = 0.5}
     }
 
     local currentPercent = 0
@@ -912,27 +978,6 @@ local topBar = Instance.new("Frame")
 topBar.Size = UDim2.new(1, 0, 0, 38)
 topBar.BackgroundTransparency = 1
 topBar.Parent = main
-
-local centerLogoHolder = Instance.new("Frame")
-centerLogoHolder.Size = UDim2.new(0, 32, 0, 32)
-centerLogoHolder.Position = UDim2.new(0.5, -16, 0.5, -16)
-centerLogoHolder.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-centerLogoHolder.BorderSizePixel = 0
-centerLogoHolder.Parent = topBar
-Instance.new("UICorner", centerLogoHolder).CornerRadius = UDim.new(1, 0)
-
-local centerLogoStroke = Instance.new("UIStroke", centerLogoHolder)
-centerLogoStroke.Color = Color3.fromRGB(255, 45, 65)
-centerLogoStroke.Thickness = 1.2
-
-local centerLogoIcon = Instance.new("ImageLabel")
-centerLogoIcon.Size = UDim2.new(1, -4, 1, -4)
-centerLogoIcon.Position = UDim2.new(0, 2, 0, 2)
-centerLogoIcon.BackgroundTransparency = 1
-centerLogoIcon.Image = CUSTOM_LOGO_ID
-centerLogoIcon.ImageTransparency = 0
-centerLogoIcon.Parent = centerLogoHolder
-Instance.new("UICorner", centerLogoIcon).CornerRadius = UDim.new(1, 0)
 
 local logoHolder = Instance.new("Frame")
 logoHolder.Size = UDim2.new(0, 32, 0, 32)
@@ -1474,18 +1519,20 @@ end
 if LocalPlayer.Character then applyFullHealthOnSpawn(LocalPlayer.Character) end
 table.insert(_G.JelyzxConnections, LocalPlayer.CharacterAdded:Connect(applyFullHealthOnSpawn))
 
--- ESP ENGINE
+-- ESP ENGINE SAFE CREATION
 local ESPObjects = {}
 local function createDrawing(class, properties)
-    local obj = Drawing.new(class)
-    for prop, val in pairs(properties or {}) do obj[prop] = val end
+    local obj = safeDrawingNew(class)
+    if obj then
+        for prop, val in pairs(properties or {}) do obj[prop] = val end
+    end
     return obj
 end
 
 local function removePlayerESP(plr)
     if ESPObjects[plr] then
         for _, obj in pairs(ESPObjects[plr].Drawing) do 
-            pcall(function() obj:Remove() end) 
+            if obj then pcall(function() obj:Remove() end) end
         end
         ESPObjects[plr] = nil
     end
@@ -1523,7 +1570,7 @@ table.insert(_G.JelyzxConnections, Players.PlayerAdded:Connect(setupPlayerESP))
 table.insert(_G.JelyzxConnections, Players.PlayerRemoving:Connect(removePlayerESP))
 
 local function resetAllDrawings(draw)
-    for _, item in pairs(draw) do item.Visible = false end
+    for _, item in pairs(draw) do if item then item.Visible = false end end
 end
 
 local function updateESPPosition()
@@ -1551,12 +1598,16 @@ local function updateESPPosition()
 
         if char and hrp and head and hum and isCharacterAlive(char) and not isTeam and dist <= State.ESP_MaxDistance then
             if State.HitboxExpander then
-                hrp.Size = Vector3.new(State.HitboxSize, State.HitboxSize, State.HitboxSize)
-                hrp.Transparency = 0.7
-                hrp.CanCollide = false
+                pcall(function()
+                    hrp.Size = Vector3.new(State.HitboxSize, State.HitboxSize, State.HitboxSize)
+                    hrp.Transparency = 0.7
+                    hrp.CanCollide = false
+                end)
             else
-                hrp.Size = Vector3.new(2, 2, 1)
-                hrp.Transparency = 1
+                pcall(function()
+                    hrp.Size = Vector3.new(2, 2, 1)
+                    hrp.Transparency = 1
+                end)
             end
 
             local hrpPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
@@ -1570,36 +1621,41 @@ local function updateESPPosition()
 
                 if State.ESP_CornerBox then
                     local lineLen = width * 0.25
-                    draw.C1.From = Vector2.new(minX, minY); draw.C1.To = Vector2.new(minX + lineLen, minY); draw.C1.Color = activeColor; draw.C1.Visible = true
-                    draw.C2.From = Vector2.new(minX, minY); draw.C2.To = Vector2.new(minX, minY + lineLen); draw.C2.Color = activeColor; draw.C2.Visible = true
-                    draw.C3.From = Vector2.new(minX + width, minY); draw.C3.To = Vector2.new(minX + width - lineLen, minY); draw.C3.Color = activeColor; draw.C3.Visible = true
-                    draw.C4.From = Vector2.new(minX + width, minY); draw.C4.To = Vector2.new(minX + width, minY + lineLen); draw.C4.Color = activeColor; draw.C4.Visible = true
-                    draw.C5.From = Vector2.new(minX, minY + height); draw.C5.To = Vector2.new(minX + lineLen, minY + height); draw.C5.Color = activeColor; draw.C5.Visible = true
-                    draw.C6.From = Vector2.new(minX, minY + height); draw.C6.To = Vector2.new(minX, minY + height - lineLen); draw.C6.Color = activeColor; draw.C6.Visible = true
-                    draw.C7.From = Vector2.new(minX + width, minY + height); draw.C7.To = Vector2.new(minX + width - lineLen, minY + height); draw.C7.Color = activeColor; draw.C7.Visible = true
-                    draw.C8.From = Vector2.new(minX + width, minY + height); draw.C8.To = Vector2.new(minX + width, minY + height - lineLen); draw.C8.Color = activeColor; draw.C8.Visible = true
+                    if draw.C1 then draw.C1.From = Vector2.new(minX, minY); draw.C1.To = Vector2.new(minX + lineLen, minY); draw.C1.Color = activeColor; draw.C1.Visible = true end
+                    if draw.C2 then draw.C2.From = Vector2.new(minX, minY); draw.C2.To = Vector2.new(minX, minY + lineLen); draw.C2.Color = activeColor; draw.C2.Visible = true end
+                    if draw.C3 then draw.C3.From = Vector2.new(minX + width, minY); draw.C3.To = Vector2.new(minX + width - lineLen, minY); draw.C3.Color = activeColor; draw.C3.Visible = true end
+                    if draw.C4 then draw.C4.From = Vector2.new(minX + width, minY); draw.C4.To = Vector2.new(minX + width, minY + lineLen); draw.C4.Color = activeColor; draw.C4.Visible = true end
+                    if draw.C5 then draw.C5.From = Vector2.new(minX, minY + height); draw.C5.To = Vector2.new(minX + lineLen, minY + height); draw.C5.Color = activeColor; draw.C5.Visible = true end
+                    if draw.C6 then draw.C6.From = Vector2.new(minX, minY + height); draw.C6.To = Vector2.new(minX, minY + height - lineLen); draw.C6.Color = activeColor; draw.C6.Visible = true end
+                    if draw.C7 then draw.C7.From = Vector2.new(minX + width, minY + height); draw.C7.To = Vector2.new(minX + width - lineLen, minY + height); draw.C7.Color = activeColor; draw.C7.Visible = true end
+                    if draw.C8 then draw.C8.From = Vector2.new(minX + width, minY + height); draw.C8.To = Vector2.new(minX + width, minY + height - lineLen); draw.C8.Color = activeColor; draw.C8.Visible = true end
                 else
-                    for i = 1, 8 do draw["C"..i].Visible = false end
+                    for i = 1, 8 do if draw["C"..i] then draw["C"..i].Visible = false end end
                 end
 
                 if State.ESP_HealthBar then
                     local healthPct = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
                     local barWidth = 2.5
                     local barX, barY = minX - barWidth - 4, minY
-                    draw.HealthBarOutline.Size = Vector2.new(barWidth, height)
-                    draw.HealthBarOutline.Position = Vector2.new(barX, barY)
-                    draw.HealthBarOutline.Visible = true
+                    if draw.HealthBarOutline then
+                        draw.HealthBarOutline.Size = Vector2.new(barWidth, height)
+                        draw.HealthBarOutline.Position = Vector2.new(barX, barY)
+                        draw.HealthBarOutline.Visible = true
+                    end
 
                     local barHeight = height * healthPct
-                    draw.HealthBar.Size = Vector2.new(barWidth, barHeight)
-                    draw.HealthBar.Position = Vector2.new(barX, barY + (height - barHeight))
-                    draw.HealthBar.Color = Color3.fromHSV(healthPct * 0.3, 1, 1)
-                    draw.HealthBar.Visible = true
+                    if draw.HealthBar then
+                        draw.HealthBar.Size = Vector2.new(barWidth, barHeight)
+                        draw.HealthBar.Position = Vector2.new(barX, barY + (height - barHeight))
+                        draw.HealthBar.Color = Color3.fromHSV(healthPct * 0.3, 1, 1)
+                        draw.HealthBar.Visible = true
+                    end
                 else
-                    draw.HealthBarOutline.Visible = false; draw.HealthBar.Visible = false
+                    if draw.HealthBarOutline then draw.HealthBarOutline.Visible = false end
+                    if draw.HealthBar then draw.HealthBar.Visible = false end
                 end
 
-                if State.ESP_Tracers then
+                if State.ESP_Tracers and draw.Tracer then
                     local startPos = Vector2.new(viewX / 2, viewY)
                     if State.ESP_TracerPos == "Tengah Tengah" then startPos = Vector2.new(viewX / 2, viewY / 2)
                     elseif State.ESP_TracerPos == "Atas Tengah" then startPos = Vector2.new(viewX / 2, 0) end
@@ -1607,23 +1663,23 @@ local function updateESPPosition()
                     draw.Tracer.To = Vector2.new(hrpPos.X, minY + height)
                     draw.Tracer.Color = activeColor; draw.Tracer.Visible = true
                 else
-                    draw.Tracer.Visible = false
+                    if draw.Tracer then draw.Tracer.Visible = false end
                 end
 
-                if State.ESP_HeadDots then
+                if State.ESP_HeadDots and draw.HeadDot then
                     draw.HeadDot.Position = Vector2.new(headPos.X, headPos.Y)
                     draw.HeadDot.Color = activeColor; draw.HeadDot.Visible = true
                 else
-                    draw.HeadDot.Visible = false
+                    if draw.HeadDot then draw.HeadDot.Visible = false end
                 end
 
-                if State.ESP_Names then
+                if State.ESP_Names and draw.NameText then
                     draw.NameText.Text = string.format("%s [%dm]", plr.Name, math.floor(dist))
                     draw.NameText.Position = Vector2.new(hrpPos.X, minY - 14)
                     draw.NameText.Color = Color3.fromRGB(255, 255, 255)
                     draw.NameText.Visible = true
                 else
-                    draw.NameText.Visible = false
+                    if draw.NameText then draw.NameText.Visible = false end
                 end
 
                 if State.ESP_Skeleton then
@@ -1634,7 +1690,7 @@ local function updateESPPosition()
                     local rightLeg = char:FindFirstChild("RightFoot") or char:FindFirstChild("Right Leg")
 
                     local function connectParts(lineObj, p1, p2)
-                        if p1 and p2 then
+                        if lineObj and p1 and p2 then
                             local pos1 = Camera:WorldToViewportPoint(p1.Position)
                             local pos2 = Camera:WorldToViewportPoint(p2.Position)
                             if pos1.Z > 0 and pos2.Z > 0 then
@@ -1644,7 +1700,7 @@ local function updateESPPosition()
                                 return
                             end
                         end
-                        lineObj.Visible = false
+                        if lineObj then lineObj.Visible = false end
                     end
 
                     connectParts(draw.Skel1, head, torso)
@@ -1653,7 +1709,11 @@ local function updateESPPosition()
                     connectParts(draw.Skel4, torso, leftLeg)
                     connectParts(draw.Skel5, torso, rightLeg)
                 else
-                    draw.Skel1.Visible = false; draw.Skel2.Visible = false; draw.Skel3.Visible = false; draw.Skel4.Visible = false; draw.Skel5.Visible = false
+                    if draw.Skel1 then draw.Skel1.Visible = false end
+                    if draw.Skel2 then draw.Skel2.Visible = false end
+                    if draw.Skel3 then draw.Skel3.Visible = false end
+                    if draw.Skel4 then draw.Skel4.Visible = false end
+                    if draw.Skel5 then draw.Skel5.Visible = false end
                 end
             else
                 resetAllDrawings(draw)
@@ -1671,22 +1731,23 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     processAntiSpectateProtection()
 
     if State.InvisibleMode and LocalPlayer.Character then
-        local myChar = LocalPlayer.Character
-        for _, item in ipairs(myChar:GetDescendants()) do
-            if item:IsA("BasePart") then
-                item.Transparency = 1
-                item.LocalTransparencyModifier = 1
-            elseif item:IsA("Decal") or item:IsA("Texture") then
-                item.Transparency = 1
-            elseif item:IsA("BillboardGui") or item:IsA("SurfaceGui") then
-                item.Enabled = false
+        pcall(function()
+            local myChar = LocalPlayer.Character
+            for _, item in ipairs(myChar:GetDescendants()) do
+                if item:IsA("BasePart") then
+                    item.Transparency = 1
+                    item.LocalTransparencyModifier = 1
+                elseif item:IsA("Decal") or item:IsA("Texture") then
+                    item.Transparency = 1
+                elseif item:IsA("BillboardGui") or item:IsA("SurfaceGui") then
+                    item.Enabled = false
+                end
             end
-        end
+        end)
     end
 
     local baseCFrame = Camera.CFrame
 
-    -- FREECAM PROCESSING ENGINE
     if State.FreecamEnabled then
         local rotCFrame = CFrame.Angles(0, freecamRotY, 0) * CFrame.Angles(freecamRotX, 0, 0)
         local moveVec = Vector3.new()
@@ -1756,10 +1817,12 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     end
 
     local viewportCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    fovCircle.Position = viewportCenter
-    fovCircle.Radius = State.FOVRadius
-    fovCircle.Color = CurrentActiveTarget and State.LockColor or State.FOVColor
-    fovCircle.Visible = State.ShowFOV and State.AimbotEnabled and not State.FreecamEnabled
+    if fovCircle then
+        fovCircle.Position = viewportCenter
+        fovCircle.Radius = State.FOVRadius
+        fovCircle.Color = CurrentActiveTarget and State.LockColor or State.FOVColor
+        fovCircle.Visible = State.ShowFOV and State.AimbotEnabled and not State.FreecamEnabled
+    end
 
     hideAllCrosshair()
     if State.CustomCrosshair then
@@ -1768,9 +1831,9 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         
         if cType == "Silang (+)" then
             local len = 7
-            chLines[1].From = Vector2.new(viewportCenter.X - len, viewportCenter.Y); chLines[1].To = Vector2.new(viewportCenter.X + len, viewportCenter.Y); chLines[1].Color = cColor; chLines[1].Visible = true
-            chLines[2].From = Vector2.new(viewportCenter.X, viewportCenter.Y - len); chLines[2].To = Vector2.new(viewportCenter.X, viewportCenter.Y + len); chLines[2].Color = cColor; chLines[2].Visible = true
-        elseif cType == "Dot (.)" then
+            if chLines[1] then chLines[1].From = Vector2.new(viewportCenter.X - len, viewportCenter.Y); chLines[1].To = Vector2.new(viewportCenter.X + len, viewportCenter.Y); chLines[1].Color = cColor; chLines[1].Visible = true end
+            if chLines[2] then chLines[2].From = Vector2.new(viewportCenter.X, viewportCenter.Y - len); chLines[2].To = Vector2.new(viewportCenter.X, viewportCenter.Y + len); chLines[2].Color = cColor; chLines[2].Visible = true end
+        elseif cType == "Dot (.)" and chCircle then
             chCircle.Position = viewportCenter
             chCircle.Radius = 2.5
             chCircle.Filled = true
@@ -1778,15 +1841,15 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
             chCircle.Visible = true
         elseif cType == "Kotak (Square)" then
             local s = 5
-            chLines[1].From = Vector2.new(viewportCenter.X - s, viewportCenter.Y - s); chLines[1].To = Vector2.new(viewportCenter.X + s, viewportCenter.Y - s); chLines[1].Color = cColor; chLines[1].Visible = true
-            chLines[2].From = Vector2.new(viewportCenter.X + s, viewportCenter.Y - s); chLines[2].To = Vector2.new(viewportCenter.X + s, viewportCenter.Y + s); chLines[2].Color = cColor; chLines[2].Visible = true
-            chLines[3].From = Vector2.new(viewportCenter.X + s, viewportCenter.Y + s); chLines[3].To = Vector2.new(viewportCenter.X - s, viewportCenter.Y + s); chLines[3].Color = cColor; chLines[3].Visible = true
-            chLines[4].From = Vector2.new(viewportCenter.X - s, viewportCenter.Y + s); chLines[4].To = Vector2.new(viewportCenter.X - s, viewportCenter.Y - s); chLines[4].Color = cColor; chLines[4].Visible = true
+            if chLines[1] then chLines[1].From = Vector2.new(viewportCenter.X - s, viewportCenter.Y - s); chLines[1].To = Vector2.new(viewportCenter.X + s, viewportCenter.Y - s); chLines[1].Color = cColor; chLines[1].Visible = true end
+            if chLines[2] then chLines[2].From = Vector2.new(viewportCenter.X + s, viewportCenter.Y - s); chLines[2].To = Vector2.new(viewportCenter.X + s, viewportCenter.Y + s); chLines[2].Color = cColor; chLines[2].Visible = true end
+            if chLines[3] then chLines[3].From = Vector2.new(viewportCenter.X + s, viewportCenter.Y + s); chLines[3].To = Vector2.new(viewportCenter.X - s, viewportCenter.Y + s); chLines[3].Color = cColor; chLines[3].Visible = true end
+            if chLines[4] then chLines[4].From = Vector2.new(viewportCenter.X - s, viewportCenter.Y + s); chLines[4].To = Vector2.new(viewportCenter.X - s, viewportCenter.Y - s); chLines[4].Color = cColor; chLines[4].Visible = true end
         elseif cType == "X-Shape (X)" then
             local d = 5
-            chLines[1].From = Vector2.new(viewportCenter.X - d, viewportCenter.Y - d); chLines[1].To = Vector2.new(viewportCenter.X + d, viewportCenter.Y + d); chLines[1].Color = cColor; chLines[1].Visible = true
-            chLines[2].From = Vector2.new(viewportCenter.X + d, viewportCenter.Y - d); chLines[2].To = Vector2.new(viewportCenter.X - d, viewportCenter.Y + d); chLines[2].Color = cColor; chLines[2].Visible = true
-        elseif cType == "Lingkaran (Circle)" then
+            if chLines[1] then chLines[1].From = Vector2.new(viewportCenter.X - d, viewportCenter.Y - d); chLines[1].To = Vector2.new(viewportCenter.X + d, viewportCenter.Y + d); chLines[1].Color = cColor; chLines[1].Visible = true end
+            if chLines[2] then chLines[2].From = Vector2.new(viewportCenter.X + d, viewportCenter.Y - d); chLines[2].To = Vector2.new(viewportCenter.X - d, viewportCenter.Y + d); chLines[2].Color = cColor; chLines[2].Visible = true end
+        elseif cType == "Lingkaran (Circle)" and chCircle then
             chCircle.Position = viewportCenter
             chCircle.Radius = 6
             chCircle.Filled = false
@@ -1802,21 +1865,23 @@ table.insert(_G.JelyzxConnections, mainRenderConn)
 -- INFINITE JUMP
 local function triggerJump()
     if State.InfiniteJump and State.ScriptActive then
-        local char = LocalPlayer.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            if hum and hrp then
-                hum:ChangeState(Enum.HumanoidStateType.Jumping)
-                hrp.AssemblyLinearVelocity = Vector3.new(hrp.AssemblyLinearVelocity.X, State.JumpPowerVal or 50, hrp.AssemblyLinearVelocity.Z)
+        pcall(function()
+            local char = LocalPlayer.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hum and hrp then
+                    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                    hrp.AssemblyLinearVelocity = Vector3.new(hrp.AssemblyLinearVelocity.X, State.JumpPowerVal or 50, hrp.AssemblyLinearVelocity.Z)
+                end
             end
-        end
+        end)
     end
 end
 
 table.insert(_G.JelyzxConnections, UserInputService.JumpRequest:Connect(triggerJump))
 
--- STEPPED PHYSICS
+-- STEPPED PHYSICS WITH ANTI-DETECTIONS
 local spinAngle = 0
 local flyBodyVelocity = nil
 local flyBodyGyro = nil
@@ -1913,21 +1978,23 @@ table.insert(_G.JelyzxConnections, stepConn)
 -- ANTI AFK
 LocalPlayer.Idled:Connect(function()
     if State.AntiAFK then
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
+        pcall(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end)
     end
 end)
 
--- CLEANUP
+-- CLEANUP & SAFE DESTROY
 closeBtn.MouseButton1Click:Connect(function()
     State.ScriptActive = false
     toggleFreecamMode(false)
-    fovCircle.Visible = false
+    if fovCircle then fovCircle.Visible = false end
     hideAllCrosshair()
     pcall(function() 
-        fovCircle:Remove()
-        for _, l in ipairs(chLines) do l:Remove() end
-        chCircle:Remove()
+        if fovCircle then fovCircle:Remove() end
+        for _, l in ipairs(chLines) do if l then l:Remove() end end
+        if chCircle then chCircle:Remove() end
     end)
     if flyBodyVelocity then flyBodyVelocity:Destroy() end
     if flyBodyGyro then flyBodyGyro:Destroy() end
