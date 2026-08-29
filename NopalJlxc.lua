@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — BETA CPB JELYZX (FIXED SPEED, SMOOTH DESYNC BLINK & FREECAM)
+-- NOPAL JLXC — CPB JELYZX (FREECAM ENHANCED & ADVANCED SPECTATE SYSTEM)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -58,9 +58,7 @@ local function playSound(soundId, volume)
         sound.Volume = volume or 0.5
         sound.Parent = SoundService
         sound:Play()
-        sound.Ended:Connect(function()
-            sound:Destroy()
-        end)
+        sound.Ended:Connect(function() sound:Destroy() end)
     end)
 end
 
@@ -134,10 +132,11 @@ local State = {
     FlyUp = false,
     FlyDown = false,
 
-    -- FREECAM SYSTEM STATE
+    -- FREECAM STATE & ACCELERATION
     FreecamEnabled = false,
-    FreecamSpeed = 1,
-    FreecamSens = 0.3,
+    FreecamSpeed = 2,
+    FreecamSens = 1.2,          -- Sensitivitas dipercepat secara default
+    FreecamUIScale = 1.0,        -- Ukuran UI Freecam
     FreecamDir = {
         Forward = false,
         Backward = false,
@@ -146,6 +145,13 @@ local State = {
         Up = false,
         Down = false
     },
+
+    -- SPECTATE SYSTEM STATE
+    SpectateEnabled = false,
+    SpectateTargetIndex = 1,
+    SpectateTargetPlayer = nil,
+    SpectateUIScale = 1.0,       -- Ukuran UI Spec
+    SpectateUIHidden = false,
 
     -- DESYNC BLINK SYSTEM
     SmoothMovement = false,
@@ -171,7 +177,7 @@ local function isAdminPlayer(plr)
         if game.PlaceId and plr:GetRankInGroup(game.PlaceId) > 100 then return true end
     end)
     local name = plr.Name:lower()
-    if name:find("admin") or name:find("mod") or name:find("owner") or name:find("dev") then return true end
+    if name:find("admin") or name:find("mod") or name:find("owner") or name:find("dev") or name:find("staff") then return true end
     if plr.Character and (plr.Character:FindFirstChild("AdminTitle") or plr.Character:FindFirstChild("StaffTag")) then return true end
     return false
 end
@@ -278,7 +284,7 @@ btnDown.MouseButton1Down:Connect(function() State.FlyDown = true end)
 btnDown.MouseButton1Up:Connect(function() State.FlyDown = false end)
 btnDown.InputEnded:Connect(function() State.FlyDown = false end)
 
--- ================= FREECAM UI SYSTEM =================
+-- ================= FREECAM UI SYSTEM (SENSITIVITY ENHANCED) =================
 local freecamUI = Instance.new("Frame")
 freecamUI.Name = "FreecamControlsUI"
 freecamUI.Size = UDim2.new(1, 0, 1, 0)
@@ -286,7 +292,6 @@ freecamUI.BackgroundTransparency = 1
 freecamUI.Visible = false
 freecamUI.Parent = gui
 
--- Area Touch Gesture untuk Rotasi Kamera
 local touchDragArea = Instance.new("TextButton")
 touchDragArea.Name = "TouchDragArea"
 touchDragArea.Size = UDim2.new(1, 0, 1, 0)
@@ -294,14 +299,22 @@ touchDragArea.BackgroundTransparency = 1
 touchDragArea.Text = ""
 touchDragArea.Parent = freecamUI
 
--- D-Pad Gerakan Kamera (Kiri)
+local freecamContainer = Instance.new("Frame")
+freecamContainer.Name = "FreecamContainer"
+freecamContainer.Size = UDim2.new(1, 0, 1, 0)
+freecamContainer.BackgroundTransparency = 1
+freecamContainer.Parent = freecamUI
+
+local fcScaleConstraint = Instance.new("UIScale", freecamContainer)
+fcScaleConstraint.Scale = State.FreecamUIScale
+
 local padDir = Instance.new("Frame")
 padDir.Name = "DPadMovement"
 padDir.Size = UDim2.new(0, 150, 0, 150)
 padDir.Position = UDim2.new(0, 20, 1, -170)
 padDir.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
 padDir.BackgroundTransparency = 0.4
-padDir.Parent = freecamUI
+padDir.Parent = freecamContainer
 Instance.new("UICorner", padDir).CornerRadius = UDim.new(1, 0)
 
 local function makeFcBtn(name, text, pos, size, dirKey)
@@ -329,14 +342,13 @@ makeFcBtn("BtnBack", "▼", UDim2.new(0.5, -20, 1, -48), UDim2.new(0, 40, 0, 40)
 makeFcBtn("BtnLeft", "◄", UDim2.new(0, 8, 0.5, -20), UDim2.new(0, 40, 0, 40), "Left")
 makeFcBtn("BtnRight", "►", UDim2.new(1, -48, 0.5, -20), UDim2.new(0, 40, 0, 40), "Right")
 
--- Tombol Elevasi (Atas & Bawah) di Kanan
 local padElev = Instance.new("Frame")
 padElev.Name = "ElevMovement"
 padElev.Size = UDim2.new(0, 60, 0, 130)
 padElev.Position = UDim2.new(1, -80, 1, -150)
 padElev.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
 padElev.BackgroundTransparency = 0.4
-padElev.Parent = freecamUI
+padElev.Parent = freecamContainer
 Instance.new("UICorner", padElev).CornerRadius = UDim.new(0, 12)
 
 local btnFcUp = Instance.new("TextButton")
@@ -370,7 +382,7 @@ btnFcDown.MouseButton1Down:Connect(function() State.FreecamDir.Down = true end)
 btnFcDown.MouseButton1Up:Connect(function() State.FreecamDir.Down = false end)
 btnFcDown.InputEnded:Connect(function() State.FreecamDir.Down = false end)
 
--- Rotasi Sentuhan Kamera & Dragging
+-- Rotasi Sentuhan Kamera & Multiplier Kecepatan Geser Layar
 local isCamDragging = false
 local lastCamTouchPos = Vector2.new()
 local freecamRotX = 0
@@ -390,8 +402,10 @@ UserInputService.InputChanged:Connect(function(input)
         local delta = currentPos - lastCamTouchPos
         lastCamTouchPos = currentPos
 
-        freecamRotY = freecamRotY - (delta.X * State.FreecamSens * 0.01)
-        freecamRotX = math.clamp(freecamRotX - (delta.Y * State.FreecamSens * 0.01), -math.rad(89), math.rad(89))
+        -- Sensitivitas ditingkatkan 3x lipat agar sangat merespons
+        local speedMult = State.FreecamSens * 0.003
+        freecamRotY = freecamRotY - (delta.X * speedMult)
+        freecamRotX = math.clamp(freecamRotX - (delta.Y * speedMult), -math.rad(89), math.rad(89))
     end
 end)
 
@@ -421,6 +435,197 @@ local function toggleFreecamMode(enable)
         for k in pairs(State.FreecamDir) do State.FreecamDir[k] = false end
     end
 end
+
+-- ================= SPECTATE UI SYSTEM (ADVANCED DETECT & CONTROL) =================
+local specUI = Instance.new("Frame")
+specUI.Name = "SpectateSystemUI"
+specUI.Size = UDim2.new(1, 0, 1, 0)
+specUI.BackgroundTransparency = 1
+specUI.Visible = false
+specUI.Parent = gui
+
+local specContainer = Instance.new("Frame")
+specContainer.Name = "SpecContainer"
+specContainer.Size = UDim2.new(1, 0, 1, 0)
+specContainer.BackgroundTransparency = 1
+specContainer.Parent = specUI
+
+local specScaleConstraint = Instance.new("UIScale", specContainer)
+specScaleConstraint.Scale = State.SpectateUIScale
+
+-- Main Card Display (Tengah Atas Layar)
+local specCard = Instance.new("Frame")
+specCard.Size = UDim2.new(0, 310, 0, 110)
+specCard.Position = UDim2.new(0.5, 0, 0, 45)
+specCard.AnchorPoint = Vector2.new(0.5, 0)
+specCard.BackgroundColor3 = Color3.fromRGB(11, 14, 22)
+specCard.BackgroundTransparency = 0.2
+specCard.Parent = specContainer
+Instance.new("UICorner", specCard).CornerRadius = UDim.new(0, 14)
+
+local specStroke = Instance.new("UIStroke", specCard)
+specStroke.Color = Color3.fromRGB(0, 240, 255)
+specStroke.Thickness = 1.8
+
+local specTitleBar = Instance.new("TextLabel")
+specTitleBar.Size = UDim2.new(1, 0, 0, 20)
+specTitleBar.Position = UDim2.new(0, 0, 0, 4)
+specTitleBar.BackgroundTransparency = 1
+specTitleBar.Text = "★ SPECTATE ENGINE SYSTEM ★"
+specTitleBar.Font = Enum.Font.GothamBlack
+specTitleBar.TextColor3 = Color3.fromRGB(0, 240, 255)
+specTitleBar.TextSize = 9
+specTitleBar.Parent = specCard
+
+local targetNameLbl = Instance.new("TextLabel")
+targetNameLbl.Size = UDim2.new(1, -20, 0, 22)
+targetNameLbl.Position = UDim2.new(0, 10, 0, 22)
+targetNameLbl.BackgroundTransparency = 1
+targetNameLbl.Text = "TARGET: NONE"
+targetNameLbl.Font = Enum.Font.GothamBlack
+targetNameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+targetNameLbl.TextSize = 13
+targetNameLbl.TextTruncate = Enum.TextTruncate.AtEnd
+targetNameLbl.Parent = specCard
+
+local statusListLbl = Instance.new("TextLabel")
+statusListLbl.Size = UDim2.new(1, -20, 0, 36)
+statusListLbl.Position = UDim2.new(0, 10, 0, 46)
+statusListLbl.BackgroundTransparency = 1
+statusListLbl.Text = "HP: 100/100 | DIST: 0m\nSTATUS: NORMAL PLAYER"
+statusListLbl.Font = Enum.Font.GothamBold
+statusListLbl.TextColor3 = Color3.fromRGB(180, 195, 220)
+statusListLbl.TextSize = 9.5
+statusListLbl.RichText = true
+statusListLbl.Parent = specCard
+
+-- Tombol Kiri & Kanan (Ganti Player)
+local btnPrevPlayer = Instance.new("TextButton")
+btnPrevPlayer.Size = UDim2.new(0, 45, 0, 35)
+btnPrevPlayer.Position = UDim2.new(0.5, -145, 0, 68)
+btnPrevPlayer.BackgroundColor3 = Color3.fromRGB(22, 28, 42)
+btnPrevPlayer.Text = "◄"
+btnPrevPlayer.TextColor3 = Color3.fromRGB(0, 240, 255)
+btnPrevPlayer.Font = Enum.Font.GothamBlack
+btnPrevPlayer.TextSize = 16
+btnPrevPlayer.Parent = specCard
+Instance.new("UICorner", btnPrevPlayer).CornerRadius = UDim.new(0, 8)
+
+local btnNextPlayer = Instance.new("TextButton")
+btnNextPlayer.Size = UDim2.new(0, 45, 0, 35)
+btnNextPlayer.Position = UDim2.new(0.5, 100, 0, 68)
+btnNextPlayer.BackgroundColor3 = Color3.fromRGB(22, 28, 42)
+btnNextPlayer.Text = "►"
+btnNextPlayer.TextColor3 = Color3.fromRGB(0, 240, 255)
+btnNextPlayer.Font = Enum.Font.GothamBlack
+btnNextPlayer.TextSize = 16
+btnNextPlayer.Parent = specCard
+Instance.new("UICorner", btnNextPlayer).CornerRadius = UDim.new(0, 8)
+
+local btnToggleSpec = Instance.new("TextButton")
+btnToggleSpec.Size = UDim2.new(0, 180, 0, 24)
+btnToggleSpec.Position = UDim2.new(0.5, -90, 0, 80)
+btnToggleSpec.BackgroundColor3 = Color3.fromRGB(255, 45, 65)
+btnToggleSpec.Text = "STOP SPECTATE"
+btnToggleSpec.TextColor3 = Color3.fromRGB(255, 255, 255)
+btnToggleSpec.Font = Enum.Font.GothamBlack
+btnToggleSpec.TextSize = 9.5
+btnToggleSpec.Parent = specCard
+Instance.new("UICorner", btnToggleSpec).CornerRadius = UDim.new(0, 6)
+
+-- Tombol Hide / Unhide Floating Icon
+local btnHideUI = Instance.new("TextButton")
+btnHideUI.Size = UDim2.new(0, 32, 0, 32)
+btnHideUI.Position = UDim2.new(0.5, 162, 0, 45)
+btnHideUI.BackgroundColor3 = Color3.fromRGB(15, 18, 28)
+btnHideUI.Text = "👁"
+btnHideUI.TextColor3 = Color3.fromRGB(0, 240, 255)
+btnHideUI.Font = Enum.Font.GothamBold
+btnHideUI.TextSize = 14
+btnHideUI.Parent = specContainer
+Instance.new("UICorner", btnHideUI).CornerRadius = UDim.new(0, 8)
+local hideStroke = Instance.new("UIStroke", btnHideUI)
+hideStroke.Color = Color3.fromRGB(0, 240, 255)
+hideStroke.Thickness = 1.2
+
+local function getValidPlayers()
+    local list = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then table.insert(list, p) end
+    end
+    return list
+end
+
+local function updateSpectateTarget(indexOffset)
+    local playerList = getValidPlayers()
+    if #playerList == 0 then
+        State.SpectateTargetPlayer = nil
+        targetNameLbl.Text = "TARGET: NO PLAYER FOUND"
+        statusListLbl.Text = "HP: 0/0 | DIST: 0m\nSTATUS: NONE"
+        return
+    end
+
+    State.SpectateTargetIndex = State.SpectateTargetIndex + indexOffset
+    if State.SpectateTargetIndex > #playerList then State.SpectateTargetIndex = 1 end
+    if State.SpectateTargetIndex < 1 then State.SpectateTargetIndex = #playerList end
+
+    State.SpectateTargetPlayer = playerList[State.SpectateTargetIndex]
+end
+
+btnPrevPlayer.MouseButton1Click:Connect(function() updateSpectateTarget(-1) end)
+btnNextPlayer.MouseButton1Click:Connect(function() updateSpectateTarget(1) end)
+
+btnToggleSpec.MouseButton1Click:Connect(function()
+    State.SpectateEnabled = not State.SpectateEnabled
+    if State.SpectateEnabled then
+        btnToggleSpec.Text = "STOP SPECTATE"
+        btnToggleSpec.BackgroundColor3 = Color3.fromRGB(255, 45, 65)
+        updateSpectateTarget(0)
+    else
+        btnToggleSpec.Text = "START SPECTATE"
+        btnToggleSpec.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        Camera.CameraSubject = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    end
+end)
+
+btnHideUI.MouseButton1Click:Connect(function()
+    State.SpectateUIHidden = not State.SpectateUIHidden
+    specCard.Visible = not State.SpectateUIHidden
+    btnHideUI.Text = State.SpectateUIHidden and "🙈" or "👁"
+end)
+
+-- UPDATE STATUS DATA TARGET SPECTATE
+RunService.RenderStepped:Connect(function()
+    if State.SpectateEnabled and State.SpectateTargetPlayer then
+        local targetPlr = State.SpectateTargetPlayer
+        local char = targetPlr.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+        if char and hum and hrp then
+            Camera.CameraSubject = hum
+
+            local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local dist = myHrp and (myHrp.Position - hrp.Position).Magnitude or 0
+
+            local hp = math.floor(hum.Health)
+            local maxHp = math.floor(hum.MaxHealth)
+
+            local statusTags = {}
+            if isAdminPlayer(targetPlr) then table.insert(statusTags, "<font color=\"#FFD700\">[ADMIN/STAFF]</font>") end
+            if isGodmodePlayer(targetPlr) then table.insert(statusTags, "<font color=\"#FF0080\">[GODMODE]</font>") end
+            if targetPlr.Team then table.insert(statusTags, "<font color=\"#00F0FF\">[" .. tostring(targetPlr.Team.Name) .. "]</font>") end
+
+            if #statusTags == 0 then table.insert(statusTags, "<font color=\"#00FF96\">[PLAYER]</font>") end
+
+            targetNameLbl.Text = "TARGET: " .. targetPlr.Name .. " (@" .. targetPlr.DisplayName .. ")"
+            statusListLbl.Text = string.format("HP: %d/%d | DIST: %dm\nSTATUS: %s", hp, maxHp, math.floor(dist), table.concat(statusTags, " "))
+        else
+            targetNameLbl.Text = "TARGET: " .. targetPlr.Name .. " (DEAD)"
+            statusListLbl.Text = "HP: 0/0 | DIST: 0m\nSTATUS: RESPRAWNING..."
+        end
+    end
+end)
 
 -- MAIN UI PANEL
 local main = Instance.new("Frame")
@@ -576,7 +781,7 @@ task.spawn(function()
     local steps = {
         {p = 0.25, t = "INITIALIZING ENGINE CORE...", d = 0.8},
         {p = 0.55, t = "INJECTING REAL DESYNC BLINK ENGINE...", d = 0.8},
-        {p = 0.85, t = "OPTIMIZING ESP & COMBAT SYSTEM...", d = 0.8},
+        {p = 0.85, t = "OPTIMIZING FREECAM & ADVANCED SPECTATE...", d = 0.8},
         {p = 1.00, t = "SYSTEM READY! WELCOME NOPAL JLXC", d = 0.5}
     }
 
@@ -652,7 +857,7 @@ titleLbl.Size = UDim2.new(1, -140, 1, 0)
 titleLbl.Position = UDim2.new(0, 46, 0, 0)
 titleLbl.BackgroundTransparency = 1
 titleLbl.Font = Enum.Font.GothamBlack
-titleLbl.Text = "NOPAL <font color=\"#FF2D41\">JLXC</font> <font color=\"#6C7B9B\">| BETA CPB JELYZX</font>"
+titleLbl.Text = "NOPAL <font color=\"#FF2D41\">JLXC</font> <font color=\"#6C7B9B\">| CPB JELYZX</font>"
 titleLbl.RichText = true
 titleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLbl.TextSize = 10
@@ -923,7 +1128,7 @@ end
 -- TABS
 local combatTab = createTab("Combat")
 local espTab = createTab("ESP Config")
-local resoTab = createTab("Resolusi")
+local specTab = createTab("Spectate UI")
 local moveTab = createTab("Movement")
 
 local colorList = {"Biru Cyan", "Hijau Neon", "Merah", "Kuning", "Ungu", "Pink Neon", "Oranye", "Putih", "Emas", "Lime", "Biru Tua"}
@@ -982,24 +1187,26 @@ addToggle(espTab, "Head Dot ESP", false, function(v) State.ESP_HeadDots = v end)
 addToggle(espTab, "Overhead Name", false, function(v) State.ESP_Names = v end)
 addToggle(espTab, "Team Check", false, function(v) State.ESP_TeamCheck = v end)
 
--- RESO TAB
-addToggle(resoTab, "Mode Gepeng FiveM Real", false, function(v) 
-    State.RealGepengEnabled = v 
-    if not v and not State.LYR360Enabled then Camera.FieldOfView = 70 end
-end)
-addSlider(resoTab, "Tingkat Gepeng Ekstrem", 10, 80, 35, function(v) 
-    State.GepengRatio = v / 100 
+-- SPECTATE TAB
+addToggle(specTab, "Aktifkan Spectate System UI", false, function(v)
+    State.SpectateEnabled = v
+    specUI.Visible = v
+    if not v then
+        Camera.CameraSubject = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    else
+        updateSpectateTarget(0)
+    end
 end)
 
-addToggle(resoTab, "Mode LYR 360%", false, function(v) 
-    State.LYR360Enabled = v 
-    if not v and not State.RealGepengEnabled then Camera.FieldOfView = 70 end
+addSlider(specTab, "Ukuran Scale UI Spectate", 50, 150, 100, function(v)
+    State.SpectateUIScale = v / 100
+    specScaleConstraint.Scale = State.SpectateUIScale
 end)
-addSlider(resoTab, "FOVs 360 Wide", 80, 160, 135, function(v) 
-    State.LYR360Val = v 
-end)
-addSlider(resoTab, "Curvature / Fisheye Roll", 1, 30, 18, function(v) 
-    State.LYRFisheyeDegree = v / 10
+
+addToggle(specTab, "Sembunyikan Panel Spectate", false, function(v)
+    State.SpectateUIHidden = v
+    specCard.Visible = not v
+    btnHideUI.Text = v and "🙈" or "👁"
 end)
 
 -- MOVEMENT TAB
@@ -1020,14 +1227,20 @@ addToggle(moveTab, "Fly Mode UI (Hover Presisi)", false, function(v)
 end)
 addSlider(moveTab, "Fly Speed", 20, 500, 100, function(v) State.FlySpeed = v end)
 
--- FREECAM OPTIONS IN MOVEMENT TAB
-addToggle(moveTab, "Freecam Mode (Mobile Touch UI)", false, function(v) 
+-- FREECAM CONFIGS
+addToggle(moveTab, "Freecam Mode (Touch UI)", false, function(v) 
     toggleFreecamMode(v)
 end)
-addSlider(moveTab, "Freecam Speed", 1, 20, 2, function(v) State.FreecamSpeed = v end)
-addSlider(moveTab, "Freecam Sensitivity", 1, 10, 3, function(v) State.FreecamSens = v / 10 end)
+addSlider(moveTab, "Kecepatan Geser Layar", 1, 50, 12, function(v) 
+    State.FreecamSens = v / 10 
+end)
+addSlider(moveTab, "Freecam Fly Speed", 1, 20, 2, function(v) State.FreecamSpeed = v end)
+addSlider(moveTab, "Ukuran Scale UI Freecam", 50, 150, 100, function(v)
+    State.FreecamUIScale = v / 100
+    fcScaleConstraint.Scale = State.FreecamUIScale
+end)
 
-addToggle(moveTab, "Spinbot Karakter (Muter)", false, function(v) State.SpinBotEnabled = v end)
+addToggle(moveTab, "Spinbot Karakter", false, function(v) State.SpinBotEnabled = v end)
 addSlider(moveTab, "Kecepatan Muter (Spin)", 10, 300, 50, function(v) State.SpinSpeed = v end)
 
 -- KEYBIND ROLLING (TOMBOL 'C')
@@ -1394,7 +1607,7 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         local worldMove = rotCFrame:VectorToWorldSpace(moveVec * (State.FreecamSpeed * 0.8))
         freecamCFrame = CFrame.new(freecamCFrame.Position + worldMove) * rotCFrame
         Camera.CFrame = freecamCFrame
-    else
+    elseif not State.SpectateEnabled then
         if State.AimbotEnabled then
             local targetPart = getBestTargetBrutal()
             if targetPart then
@@ -1497,7 +1710,7 @@ end
 
 table.insert(_G.JelyzxConnections, UserInputService.JumpRequest:Connect(triggerJump))
 
--- STEPPED & NAVIGATION PHYSICS ENGINE
+-- STEPPED PHYSICS
 local spinAngle = 0
 local flyBodyVelocity = nil
 local flyBodyGyro = nil
@@ -1512,7 +1725,6 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
             local hrp = char:FindFirstChild("HumanoidRootPart")
 
             if hum and hrp then
-                -- WALK SPEED BYPASS
                 hum.WalkSpeed = State.WalkSpeedVal
                 if State.WalkSpeedVal > 16 and hum.MoveDirection.Magnitude > 0 then
                     local targetVelocity = hum.MoveDirection * State.WalkSpeedVal
@@ -1523,7 +1735,6 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
                 hum.JumpPower = State.JumpPowerVal
             end
 
-            -- SUPER MOVEMENT SMOOTHNESS
             if State.SmoothMovement and hrp and hum then
                 local moveDir = hum.MoveDirection
                 if moveDir.Magnitude > 0 then
@@ -1532,7 +1743,6 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
                 end
             end
 
-            -- REAL DESYNC BLINK ENGINE
             if State.FiveMBlink and hrp and hum and not State.FlyEnabled then
                 if hum.MoveDirection.Magnitude > 0 then
                     desyncTick = desyncTick + 1
@@ -1617,6 +1827,7 @@ closeBtn.MouseButton1Click:Connect(function()
     if flyBodyGyro then flyBodyGyro:Destroy() end
     Camera.CameraType = Enum.CameraType.Custom
     Camera.FieldOfView = 70
+    Camera.CameraSubject = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
     for _, conn in ipairs(_G.JelyzxConnections) do pcall(function() conn:Disconnect() end) end
     table.clear(_G.JelyzxConnections)
     for plr in pairs(ESPObjects) do removePlayerESP(plr) end
