@@ -44,7 +44,7 @@ local SoundService = Services.SoundService
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
--- GUI Parent Safe Retrieval (Metamethod-Hooking entfernt zur Vermeidung von Namecall-Detection)
+-- GUI Parent Safe Retrieval
 local function getGuiParent()
     local parent = nil
     pcall(function() if gethui then parent = gethui() end end)
@@ -923,15 +923,18 @@ logoIcon.ImageTransparency = 0
 logoIcon.Parent = logoHolder
 Instance.new("UICorner", logoIcon).CornerRadius = UDim.new(0, 4)
 
+-- TITLE HEADER (FIXED LENGTH & AUTO SCALE)
 local titleLbl = Instance.new("TextLabel")
-titleLbl.Size = UDim2.new(0, 140, 1, 0)
+titleLbl.Size = UDim2.new(0, 300, 1, 0)
 titleLbl.Position = UDim2.new(0, 46, 0, 0)
 titleLbl.BackgroundTransparency = 1
 titleLbl.Font = Enum.Font.GothamBlack
-titleLbl.Text = "NOPAL <font color=\"#FF2D41\">JLXC</font>"
+titleLbl.Text = "NOPAL <font color=\"#FF2D41\">JLXC</font> <font color=\"#808080\">|</font> <font color=\"#808080\">BETA CPB JELYZX</font>"
 titleLbl.RichText = true
 titleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLbl.TextSize = 10
+titleLbl.TextScaled = false
+titleLbl.TextWrapped = false
 titleLbl.TextXAlignment = Enum.TextXAlignment.Left
 titleLbl.Parent = topBar
 
@@ -1207,13 +1210,13 @@ local moveTab = createTab("Movement")
 local colorList = {"Biru Cyan", "Hijau Neon", "Merah", "Kuning", "Ungu", "Pink Neon", "Oranye", "Putih", "Emas", "Lime", "Biru Tua"}
 
 -- COMBAT TAB
-addToggle(combatTab, "Camera Lock (Aimjlxc)", false, function(v) State.AimjlxcEnabled = v end)
-addToggle(combatTab, "Instant Lock Mode", false, function(v) State.DirectLock = v end)
+addToggle(combatTab, "Camera Lock (Aimbot)", false, function(v) State.AimjlxcEnabled = v end)
 addSlider(combatTab, "Smoothness Speed", 1, 50, 5, function(v) State.Smoothness = v / 50 end)
+addToggle(combatTab, "Instant Lock Mode", false, function(v) State.DirectLock = v end)
 addToggle(combatTab, "Movement Prediction", false, function(v) State.Prediction = v end)
-addToggle(combatTab, "Wall Check (Ultra Presisi)", true, function(v) State.WallCheck = v end)
+addToggle(combatTab, "Wall Check", true, function(v) State.WallCheck = v end)
 addSelector(combatTab, "Target Part", {"Head", "Torso", "HumanoidRootPart"}, 1, function(v) State.TargetPart = v end)
-addToggle(combatTab, "Show AimPOV Circle", false, function(v) State.ShowAimPOV = v end)
+addToggle(combatTab, "Show FOV Circle", false, function(v) State.ShowAimPOV = v end)
 addSlider(combatTab, "AimPOV Radius", 50, 1500, 150, function(v) State.AimPOVRadius = v end)
 addSelector(combatTab, "Warna AimPOV Circle", colorList, 1, function(v)
     State.AimPOVColor = ColorMap[v] or Color3.fromRGB(0, 240, 255)
@@ -1359,7 +1362,7 @@ local function getExactTargetPart(character)
     end
 end
 
--- COMBAT ENGINE & WALL CHECK
+-- COMBAT ENGINE & WALL CHECK (OPTIMIZED & STABILIZED)
 local function checkWallObstructionBrutal(targetPart)
     if not targetPart or not targetPart.Parent then return false end
     local char = targetPart.Parent
@@ -1375,18 +1378,8 @@ local function checkWallObstructionBrutal(targetPart)
     rayParams.FilterDescendantsInstances = filterList
     rayParams.IgnoreWater = true
 
-    local checkPoints = {targetPart.Position}
-    local head = char:FindFirstChild("Head")
-    local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
-
-    if head and head ~= targetPart then table.insert(checkPoints, head.Position) end
-    if torso and torso ~= targetPart then table.insert(checkPoints, torso.Position) end
-
-    for _, point in ipairs(checkPoints) do
-        local rayResult = Workspace:Raycast(camPos, point - camPos, rayParams)
-        if not rayResult then return true end
-    end
-    return false
+    local rayResult = Workspace:Raycast(camPos, targetPart.Position - camPos, rayParams)
+    return not rayResult
 end
 
 local function isCharacterAlive(char)
@@ -1417,8 +1410,12 @@ local function isTargetValidForAimjlxc(targetPart)
     return true
 end
 
+-- STICKY TARGET LOGIC
 local function getBestTargetBrutal()
-    if CurrentActiveTarget and isTargetValidForAimjlxc(CurrentActiveTarget) then return CurrentActiveTarget end
+    if CurrentActiveTarget and isTargetValidForAimjlxc(CurrentActiveTarget) then 
+        return CurrentActiveTarget 
+    end
+
     local viewportCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local closestPart, minDistance = nil, State.AimPOVRadius
 
@@ -1439,6 +1436,7 @@ local function getBestTargetBrutal()
             end
         end
     end
+    
     CurrentActiveTarget = closestPart
     return closestPart
 end
@@ -1658,7 +1656,7 @@ local function updateESPPosition()
     end
 end
 
--- RENDER LOOP
+-- RENDER LOOP (STABILIZED INSTANT LOCK & LERP FIX)
 local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     if not State.ScriptActive then return end
 
