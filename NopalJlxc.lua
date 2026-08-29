@@ -41,7 +41,7 @@ local function getGuiParent()
 end
 
 local parentGui = getGuiParent()
-local oldGui = parentGui:FindFirstChild("JELYZX_V20_FULL_GUI") or LocalPlayer.PlayerGui:FindFirstChild("JELYZX_V20_FULL_GUI")
+local oldGui = parentGui:FindFirstChild("JELYZX_V20_FULL_GUI") or (LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("JELYZX_V20_FULL_GUI"))
 if oldGui then oldGui:Destroy() end
 
 -- ASSETS ID
@@ -154,7 +154,9 @@ local ColorGodmode = Color3.fromRGB(255, 0, 128)
 
 local function isAdminPlayer(plr)
     if not plr then return false end
-    if plr:GetRankInGroup(game.PlaceId) > 100 then return true end
+    pcall(function()
+        if game.PlaceId and plr:GetRankInGroup(game.PlaceId) > 100 then return true end
+    end)
     local name = plr.Name:lower()
     if name:find("admin") or name:find("mod") or name:find("owner") or name:find("dev") then return true end
     if plr.Character and (plr.Character:FindFirstChild("AdminTitle") or plr.Character:FindFirstChild("StaffTag")) then return true end
@@ -336,18 +338,20 @@ entranceTween:Play()
 task.spawn(function()
     entranceTween.Completed:Wait()
     while showcaseLogo and showcaseLogo.Parent do
-        TweenService:Create(showcaseLogo, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+        local t1 = TweenService:Create(showcaseLogo, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
             Size = UDim2.new(0, 68, 0, 68),
             Position = UDim2.new(0.5, 0, 0, -36),
             ImageTransparency = 0.45
-        }):Play()
+        })
+        t1:Play()
         task.wait(1.1)
 
-        TweenService:Create(showcaseLogo, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+        local t2 = TweenService:Create(showcaseLogo, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
             Size = UDim2.new(0, 76, 0, 76),
             Position = UDim2.new(0.5, 0, 0, -40),
             ImageTransparency = 0
-        }):Play()
+        })
+        t2:Play()
         task.wait(1.1)
     end
 end)
@@ -874,7 +878,9 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
                 task.spawn(function()
                     local moveDir = hum.MoveDirection
                     for i = 1, 10 do
-                        hrp.CFrame = hrp.CFrame + (moveDir * (State.RollingSpeed / 10))
+                        if hrp and hrp.Parent then
+                            hrp.CFrame = hrp.CFrame + (moveDir * (State.RollingSpeed / 10))
+                        end
                         task.wait(0.01)
                     end
                     State.IsRolling = false
@@ -996,7 +1002,9 @@ end
 
 local function removePlayerESP(plr)
     if ESPObjects[plr] then
-        for _, obj in pairs(ESPObjects[plr].Drawing) do pcall(function() obj:Remove() end) end
+        for _, obj in pairs(ESPObjects[plr].Drawing) do 
+            pcall(function() obj:Remove() end) 
+        end
         ESPObjects[plr] = nil
     end
 end
@@ -1210,7 +1218,7 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
             if State.DirectLock then
                 baseCFrame = targetCFrame
             else
-                local smoothness = math.clamp(State.Smoothness * 50, 1, 50)
+                local smoothness = math.clamp(State.Smoothness * 30, 1, 50)
                 local lerpAlpha = 1 - math.exp(-smoothness * deltaTime)
                 baseCFrame = Camera.CFrame:Lerp(targetCFrame, math.clamp(lerpAlpha, 0.01, 1))
             end
@@ -1309,7 +1317,7 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
             local hrp = char:FindFirstChild("HumanoidRootPart")
 
             if hum and hrp then
-                -- WALK SPEED BYPASS (Menembus sistem anti-speed game)
+                -- WALK SPEED BYPASS
                 hum.WalkSpeed = State.WalkSpeedVal
                 if State.WalkSpeedVal > 16 and hum.MoveDirection.Magnitude > 0 then
                     local targetVelocity = hum.MoveDirection * State.WalkSpeedVal
@@ -1329,16 +1337,17 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
                 end
             end
 
-            -- REAL DESYNC BLINK ENGINE (Sangat mulus di POV kamu, teleport-blink di musuh)
+            -- REAL DESYNC BLINK ENGINE
             if State.FiveMBlink and hrp and hum and not State.FlyEnabled then
                 if hum.MoveDirection.Magnitude > 0 then
                     desyncTick = desyncTick + 1
                     local lagDelay = math.clamp(35 - State.BlinkIntensity, 5, 30)
                     
                     if desyncTick % lagDelay ~= 0 then
-                        -- Tahan pembaruan posisi fisik sementara dari server
                         hrp.AssemblyLinearVelocity = hrp.AssemblyLinearVelocity * 0.05
                     end
+                else
+                    desyncTick = 0
                 end
             end
 
