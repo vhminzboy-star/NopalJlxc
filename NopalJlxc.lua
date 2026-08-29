@@ -234,7 +234,7 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Parent = parentGui
 
--- OVERHEAD SPEC WATERMARK (BISA DILIHAT DIMANA AJA)
+-- OVERHEAD SPEC WATERMARK
 local specWatermark = Instance.new("TextLabel")
 specWatermark.Name = "SpecWatermark"
 specWatermark.Size = UDim2.new(0, 220, 0, 24)
@@ -255,7 +255,7 @@ local flyControls = Instance.new("Frame")
 flyControls.Name = "ModernFlyUI"
 flyControls.Size = UDim2.new(0, 70, 0, 150)
 flyControls.Position = UDim2.new(1, -80, 0.4, 0)
-flyControls.BackgroundTransparency = 1 -- Background dihilangkan
+flyControls.BackgroundTransparency = 1
 flyControls.Active = false
 flyControls.Visible = false
 flyControls.Parent = gui
@@ -297,9 +297,9 @@ btnDown.InputEnded:Connect(function() State.FlyDown = false end)
 local spectateUI = Instance.new("Frame")
 spectateUI.Name = "SpectateSystemUI"
 spectateUI.Size = UDim2.new(0, 320, 0, 46)
-spectateUI.Position = UDim2.new(0.5, 0, 0.72, 0) -- Dinaikkan posisi agar tidak terlalu bawah
+spectateUI.Position = UDim2.new(0.5, 0, 0.72, 0)
 spectateUI.AnchorPoint = Vector2.new(0.5, 0.5)
-spectateUI.BackgroundTransparency = 1 -- Transparan total
+spectateUI.BackgroundTransparency = 1
 spectateUI.Active = false
 spectateUI.Visible = false
 spectateUI.Parent = gui
@@ -450,7 +450,7 @@ btnSpecShowMini.MouseButton1Click:Connect(function()
     btnSpecShowMini.Visible = false
 end)
 
--- FREECAM TOUCH UI SYSTEM (TANPA BACKGROUND HITAM UTAMA)
+-- FREECAM TOUCH UI SYSTEM
 local freecamUI = Instance.new("Frame")
 freecamUI.Name = "FreecamControlsUI"
 freecamUI.Size = UDim2.new(1, 0, 1, 0)
@@ -459,11 +459,10 @@ freecamUI.Active = false
 freecamUI.Visible = false
 freecamUI.Parent = gui
 
--- FREECAM DIRECTIONAL BUTTONS (SISI KIRI)
 local freecamDirFrame = Instance.new("Frame")
 freecamDirFrame.Size = UDim2.new(0, 130, 0, 130)
-freecamDirFrame.Position = UDim2.new(0, 15, 0.65, 0) -- Diangkat posisi dari batas bawah
-freecamDirFrame.BackgroundTransparency = 1 -- Transparan total
+freecamDirFrame.Position = UDim2.new(0, 15, 0.65, 0)
+freecamDirFrame.BackgroundTransparency = 1
 freecamDirFrame.Active = false
 freecamDirFrame.Parent = freecamUI
 
@@ -500,11 +499,10 @@ bindTouchBtn(fcBack, "FreecamBackward")
 bindTouchBtn(fcLeft, "FreecamLeft")
 bindTouchBtn(fcRight, "FreecamRight")
 
--- FREECAM UP/DOWN BUTTONS (SISI KANAN)
 local freecamUpDown = Instance.new("Frame")
 freecamUpDown.Size = UDim2.new(0, 55, 0, 130)
-freecamUpDown.Position = UDim2.new(1, -70, 0.65, 0) -- Diangkat posisi dari batas bawah
-freecamUpDown.BackgroundTransparency = 1 -- Transparan total
+freecamUpDown.Position = UDim2.new(1, -70, 0.65, 0)
+freecamUpDown.BackgroundTransparency = 1
 freecamUpDown.Active = false
 freecamUpDown.Parent = freecamUI
 
@@ -537,10 +535,10 @@ addIndividualStroke(fcDown, Color3.fromRGB(255, 55, 80), 1)
 bindTouchBtn(fcUp, "FreecamUp")
 bindTouchBtn(fcDown, "FreecamDown")
 
--- MAIN UI PANEL (REVISI POSISI DAN TRANSPARANSI)
+-- MAIN UI PANEL
 local main = Instance.new("Frame")
 main.Size = UDim2.new(0, 0, 0, 0)
-main.Position = UDim2.new(0.5, 0, 0.42, 0) -- Posisi dinaikkan sedikit ke atas
+main.Position = UDim2.new(0.5, 0, 0.42, 0)
 main.AnchorPoint = Vector2.new(0.5, 0.5)
 main.BackgroundColor3 = Color3.fromRGB(11, 13, 20)
 main.BackgroundTransparency = 0.15
@@ -551,7 +549,7 @@ main.Parent = gui
 Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
 addIndividualStroke(main, Color3.fromRGB(255, 45, 65), 1.5)
 
--- OVERLAY INTRO & LOGO SHOWCASE
+-- OVERLAY INTRO
 local introBg = Instance.new("Frame")
 introBg.Name = "IntroOverlay"
 introBg.Size = UDim2.new(1, 0, 1, 0)
@@ -1052,7 +1050,6 @@ addSelector(combatTab, "Warna FOV Circle", colorList, 1, function(v)
     State.FOVColor = ColorMap[v] or Color3.fromRGB(0, 240, 255)
 end)
 
--- ANTI SPECTATE ADMIN & INVISIBLE SYSTEM
 addToggle(combatTab, "Anti-Spectate Admin/Staff", false, function(v) State.AntiSpectateAdmin = v end)
 
 addToggle(combatTab, "Invisible Mode (Full Ghost)", false, function(v) 
@@ -1487,7 +1484,6 @@ end
 local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     if not State.ScriptActive then return end
 
-    -- ANTI-SPECTATE SYSTEM UNTUK ADMIN / PLAYER LAIN
     if State.AntiSpectateAdmin and LocalPlayer.Character then
         local myChar = LocalPlayer.Character
         local myHum = myChar:FindFirstChildOfClass("Humanoid")
@@ -1646,7 +1642,7 @@ end
 
 table.insert(_G.JelyzxConnections, UserInputService.JumpRequest:Connect(triggerJump))
 
--- STEPPED & NAVIGATION PHYSICS ENGINE
+-- PHYSICS ENGINE
 local spinAngle = 0
 local flyBodyVelocity = nil
 local flyBodyGyro = nil
