@@ -1,7 +1,7 @@
 -- ========================================================
--- NOPAL JLXC — BETA CPB JELYZX (UPGRADED BLING AGRESIVE FIX)
--- Showcase Logo: [https://create.roblox.com/store/asset/129775661697970](https://create.roblox.com/store/asset/129775661697970)
--- Background Logo: [https://create.roblox.com/store/asset/111989994218720](https://create.roblox.com/store/asset/111989994218720)
+-- NOPAL JLXC — BETA CPB JELYZX (FIXED PERFECT DESYNC BLINK)
+-- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
+-- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
 if _G.JelyzxConnections then
     for _, conn in ipairs(_G.JelyzxConnections) do
@@ -134,12 +134,11 @@ local State = {
     FlyUp = false,
     FlyDown = false,
 
-    -- FIXED SMOOTH MOTION & FIVEM BLINK ENGINE
+    -- PERFECT DESYNC BLINK ENGINE
     SmoothMovement = false,
     SmoothFactor = 0.25,
     FiveMBlink = false,
-    BlinkIntensity = 15,
-    BlinkSpeed = 0.05,
+    BlinkIntensity = 10,
     RollingSpeed = 45,
     IsRolling = false,
 
@@ -415,7 +414,7 @@ percentText.Parent = introCard
 task.spawn(function()
     local steps = {
         {p = 0.25, t = "INITIALIZING ENGINE CORE...", d = 0.8},
-        {p = 0.55, t = "INJECTING SMOOTH MOTION & FIVEM BLINK...", d = 0.8},
+        {p = 0.55, t = "INJECTING REAL DESYNC BLINK ENGINE...", d = 0.8},
         {p = 0.85, t = "OPTIMIZING ESP & COMBAT SYSTEM...", d = 0.8},
         {p = 1.00, t = "SYSTEM READY! WELCOME NOPAL JLXC", d = 0.5}
     }
@@ -849,8 +848,8 @@ addSlider(moveTab, "Jump Power", 50, 1000, 100, function(v) State.JumpPowerVal =
 addToggle(moveTab, "Super Smooth Movement", false, function(v) State.SmoothMovement = v end)
 addSlider(moveTab, "Smoothness Factor", 1, 50, 25, function(v) State.SmoothFactor = v / 100 end)
 
-addToggle(moveTab, "FiveM Blink (POV Musuh)", false, function(v) State.FiveMBlink = v end)
-addSlider(moveTab, "Blink Intensity", 1, 50, 15, function(v) State.BlinkIntensity = v end)
+addToggle(moveTab, "FiveM Blink (Desync Musuh)", false, function(v) State.FiveMBlink = v end)
+addSlider(moveTab, "Blink Intensity (Jarak Desync)", 1, 30, 10, function(v) State.BlinkIntensity = v end)
 
 addToggle(moveTab, "Infinite Jump", false, function(v) State.InfiniteJump = v end)
 addToggle(moveTab, "Noclip Mode", false, function(v) State.NoclipEnabled = v end)
@@ -1299,6 +1298,7 @@ table.insert(_G.JelyzxConnections, UserInputService.JumpRequest:Connect(triggerJ
 local spinAngle = 0
 local flyBodyVelocity = nil
 local flyBodyGyro = nil
+local blinkCounter = 0
 
 local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
     if not State.ScriptActive then return end
@@ -1323,13 +1323,19 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
                 end
             end
 
-            -- FIXED FIVEM BLINK (CFrame Jittering halus - anti-glitch local, desync server)
+            -- REAL DESYNC BLINK ENGINE (Gak bikin speed cepet/patah2 di POV sendiri, tapi musuh liat blink/lag)
             if State.FiveMBlink and hrp and hum and not State.FlyEnabled then
                 if hum.MoveDirection.Magnitude > 0 then
-                    local blinkFactor = State.BlinkIntensity / 10
-                    local jitterVector = (hum.MoveDirection * (math.random(-100, 100) / 100) * blinkFactor) 
-                        + Vector3.new((math.random() - 0.5) * 0.5, 0, (math.random() - 0.5) * 0.5)
-                    hrp.CFrame = hrp.CFrame + jitterVector
+                    blinkCounter = blinkCounter + 1
+                    if blinkCounter % 2 == 0 then
+                        local offsetVal = (State.BlinkIntensity / 10)
+                        local desyncVector = (hum.MoveDirection * offsetVal)
+                        
+                        -- Geser karakter sebentar ke depan/samping untuk buat packet desync
+                        hrp.CFrame = hrp.CFrame + desyncVector
+                        -- Lock kecepatan fisika agar WalkSpeed tidak ikut meloncat kencang
+                        hrp.AssemblyLinearVelocity = hum.MoveDirection * State.WalkSpeedVal
+                    end
                 end
             end
 
