@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — BETA CPB JELYZX (FIXED PERFECT DESYNC BLINK)
+-- NOPAL JLXC — BETA CPB JELYZX (FIXED NORMAL POV SPEED BLINK)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -134,7 +134,7 @@ local State = {
     FlyUp = false,
     FlyDown = false,
 
-    -- PERFECT DESYNC BLINK ENGINE
+    -- DESYNC BLINK SYSTEM
     SmoothMovement = false,
     SmoothFactor = 0.25,
     FiveMBlink = false,
@@ -842,14 +842,14 @@ addSlider(resoTab, "Curvature / Fisheye Roll", 1, 30, 18, function(v)
 end)
 
 -- MOVEMENT TAB
-addSlider(moveTab, "Walk Speed", 16, 500, 30, function(v) State.WalkSpeedVal = v end)
-addSlider(moveTab, "Jump Power", 50, 1000, 100, function(v) State.JumpPowerVal = v end)
+addSlider(moveTab, "Walk Speed", 16, 500, 16, function(v) State.WalkSpeedVal = v end)
+addSlider(moveTab, "Jump Power", 50, 1000, 50, function(v) State.JumpPowerVal = v end)
 
 addToggle(moveTab, "Super Smooth Movement", false, function(v) State.SmoothMovement = v end)
 addSlider(moveTab, "Smoothness Factor", 1, 50, 25, function(v) State.SmoothFactor = v / 100 end)
 
 addToggle(moveTab, "FiveM Blink (Desync Musuh)", false, function(v) State.FiveMBlink = v end)
-addSlider(moveTab, "Blink Intensity (Jarak Desync)", 1, 30, 10, function(v) State.BlinkIntensity = v end)
+addSlider(moveTab, "Blink Intensity (Intensitas Lag)", 1, 30, 10, function(v) State.BlinkIntensity = v end)
 
 addToggle(moveTab, "Infinite Jump", false, function(v) State.InfiniteJump = v end)
 addToggle(moveTab, "Noclip Mode", false, function(v) State.NoclipEnabled = v end)
@@ -1298,7 +1298,7 @@ table.insert(_G.JelyzxConnections, UserInputService.JumpRequest:Connect(triggerJ
 local spinAngle = 0
 local flyBodyVelocity = nil
 local flyBodyGyro = nil
-local blinkCounter = 0
+local blinkTick = 0
 
 local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
     if not State.ScriptActive then return end
@@ -1323,18 +1323,20 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
                 end
             end
 
-            -- REAL DESYNC BLINK ENGINE (Gak bikin speed cepet/patah2 di POV sendiri, tapi musuh liat blink/lag)
+            -- REAL DESYNC BLINK ENGINE (0% speed boost di POV sendiri, murni lag simulation ke server)
             if State.FiveMBlink and hrp and hum and not State.FlyEnabled then
                 if hum.MoveDirection.Magnitude > 0 then
-                    blinkCounter = blinkCounter + 1
-                    if blinkCounter % 2 == 0 then
-                        local offsetVal = (State.BlinkIntensity / 10)
-                        local desyncVector = (hum.MoveDirection * offsetVal)
-                        
-                        -- Geser karakter sebentar ke depan/samping untuk buat packet desync
-                        hrp.CFrame = hrp.CFrame + desyncVector
-                        -- Lock kecepatan fisika agar WalkSpeed tidak ikut meloncat kencang
-                        hrp.AssemblyLinearVelocity = hum.MoveDirection * State.WalkSpeedVal
+                    blinkTick = blinkTick + 1
+                    local delayThreshold = math.clamp(12 - math.floor(State.BlinkIntensity / 3), 2, 10)
+                    
+                    if blinkTick % delayThreshold == 0 then
+                        -- Tahan pembaruan jaringan fisik secara singkat tanpa menyentuh CFrame
+                        sethiddenproperty(hrp, "NetworkIsWaitingForCollision", true)
+                        task.delay(0.03, function()
+                            if hrp then
+                                sethiddenproperty(hrp, "NetworkIsWaitingForCollision", false)
+                            end
+                        end)
                     end
                 end
             end
