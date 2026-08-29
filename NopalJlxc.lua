@@ -1,7 +1,7 @@
 -- ========================================================
--- NOPAL JLXC — BETA CPB JELYZX (UPGRADED BLING AGRESIVE)
--- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
--- Background Logo: https://create.roblox.com/store/asset/111989994218720
+-- NOPAL JLXC — BETA CPB JELYZX (UPGRADED BLING AGRESIVE FIX)
+-- Showcase Logo: [https://create.roblox.com/store/asset/129775661697970](https://create.roblox.com/store/asset/129775661697970)
+-- Background Logo: [https://create.roblox.com/store/asset/111989994218720](https://create.roblox.com/store/asset/111989994218720)
 -- ========================================================
 if _G.JelyzxConnections then
     for _, conn in ipairs(_G.JelyzxConnections) do
@@ -134,12 +134,12 @@ local State = {
     FlyUp = false,
     FlyDown = false,
 
-    -- NEW FEATURES: UPGRADED BLING & SMOOTH MOTION
+    -- FIXED SMOOTH MOTION & FIVEM BLINK ENGINE
     SmoothMovement = false,
     SmoothFactor = 0.25,
     FiveMBlink = false,
-    BlinkIntensity = 25,
-    BlinkSpeed = 0.01,
+    BlinkIntensity = 15,
+    BlinkSpeed = 0.05,
     RollingSpeed = 45,
     IsRolling = false,
 
@@ -414,10 +414,10 @@ percentText.Parent = introCard
 
 task.spawn(function()
     local steps = {
-        {p = 0.25, t = "INITIALIZING ENGINE CORE...", d = 1.0},
-        {p = 0.55, t = "INJECTING SMOOTH MOTION & FIVEM BLINK...", d = 1.1},
-        {p = 0.85, t = "OPTIMIZING ESP & COMBAT SYSTEM...", d = 1.1},
-        {p = 1.00, t = "SYSTEM READY! WELCOME NOPAL JLXC", d = 0.8}
+        {p = 0.25, t = "INITIALIZING ENGINE CORE...", d = 0.8},
+        {p = 0.55, t = "INJECTING SMOOTH MOTION & FIVEM BLINK...", d = 0.8},
+        {p = 0.85, t = "OPTIMIZING ESP & COMBAT SYSTEM...", d = 0.8},
+        {p = 1.00, t = "SYSTEM READY! WELCOME NOPAL JLXC", d = 0.5}
     }
 
     local currentPercent = 0
@@ -443,13 +443,13 @@ task.spawn(function()
         task.wait(step.d)
     end
     
-    task.wait(0.3)
+    task.wait(0.2)
     
-    local closeIntro = TweenService:Create(introCard, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+    local closeIntro = TweenService:Create(introCard, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
         Size = UDim2.new(0, 0, 0, 0),
         BackgroundTransparency = 1
     })
-    local fadeBg = TweenService:Create(introBg, TweenInfo.new(0.35), {BackgroundTransparency = 1})
+    local fadeBg = TweenService:Create(introBg, TweenInfo.new(0.3), {BackgroundTransparency = 1})
     
     closeIntro:Play()
     fadeBg:Play()
@@ -850,8 +850,7 @@ addToggle(moveTab, "Super Smooth Movement", false, function(v) State.SmoothMovem
 addSlider(moveTab, "Smoothness Factor", 1, 50, 25, function(v) State.SmoothFactor = v / 100 end)
 
 addToggle(moveTab, "FiveM Blink (POV Musuh)", false, function(v) State.FiveMBlink = v end)
-addSlider(moveTab, "Blink Intensity (Radius Lag)", 5, 100, 25, function(v) State.BlinkIntensity = v end)
-addSlider(moveTab, "Blink Speed (Interval Desync)", 1, 100, 1, function(v) State.BlinkSpeed = v / 100 end)
+addSlider(moveTab, "Blink Intensity", 1, 50, 15, function(v) State.BlinkIntensity = v end)
 
 addToggle(moveTab, "Infinite Jump", false, function(v) State.InfiniteJump = v end)
 addToggle(moveTab, "Noclip Mode", false, function(v) State.NoclipEnabled = v end)
@@ -1296,36 +1295,6 @@ end
 
 table.insert(_G.JelyzxConnections, UserInputService.JumpRequest:Connect(triggerJump))
 
--- ========================================================
--- UPGRADED FIVEM BLINK LOOP (DESYNC POV MUSUH, LOKAL SMOOTH)
--- ========================================================
-task.spawn(function()
-    while true do
-        if not State.ScriptActive then break end
-        
-        if State.FiveMBlink and not State.FlyEnabled then
-            pcall(function()
-                local char = LocalPlayer.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                
-                if hrp then
-                    local blinkRadius = State.BlinkIntensity * 5
-                    local jitterX = (math.random() - 0.5) * blinkRadius
-                    local jitterZ = (math.random() - 0.5) * blinkRadius
-                    
-                    hrp.AssemblyLinearVelocity = Vector3.new(
-                        hrp.AssemblyLinearVelocity.X + jitterX,
-                        hrp.AssemblyLinearVelocity.Y,
-                        hrp.AssemblyLinearVelocity.Z + jitterZ
-                    )
-                end
-            end)
-        end
-        
-        task.wait(math.max(State.BlinkSpeed, 0.03))
-    end
-end)
-
 -- STEPPED & NAVIGATION PHYSICS ENGINE
 local spinAngle = 0
 local flyBodyVelocity = nil
@@ -1346,11 +1315,21 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
             end
 
             -- SUPER MOVEMENT SMOOTHNESS
-            if State.SmoothMovement and hrp and hum and not State.FiveMBlink then
+            if State.SmoothMovement and hrp and hum then
                 local moveDir = hum.MoveDirection
                 if moveDir.Magnitude > 0 then
                     local targetVel = moveDir * State.WalkSpeedVal
                     hrp.AssemblyLinearVelocity = hrp.AssemblyLinearVelocity:Lerp(Vector3.new(targetVel.X, hrp.AssemblyLinearVelocity.Y, targetVel.Z), State.SmoothFactor)
+                end
+            end
+
+            -- FIXED FIVEM BLINK (CFrame Jittering halus - anti-glitch local, desync server)
+            if State.FiveMBlink and hrp and hum and not State.FlyEnabled then
+                if hum.MoveDirection.Magnitude > 0 then
+                    local blinkFactor = State.BlinkIntensity / 10
+                    local jitterVector = (hum.MoveDirection * (math.random(-100, 100) / 100) * blinkFactor) 
+                        + Vector3.new((math.random() - 0.5) * 0.5, 0, (math.random() - 0.5) * 0.5)
+                    hrp.CFrame = hrp.CFrame + jitterVector
                 end
             end
 
