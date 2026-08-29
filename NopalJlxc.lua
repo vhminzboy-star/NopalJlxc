@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (ENHANCED FREECAM, SPECTATE & ANTI-SPECTATE ADMIN)
+-- NOPAL JLXC — CPB JELYZX (ENHANCED FREECAM, SPECTATE & ANTI-SPECTATE ADMIN + PC SPOOFER)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -25,6 +25,48 @@ local SoundService = Services.SoundService
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
+
+-- ========================================================
+-- [PC SPOOFER SYSTEM] — MEMALSUKAN DEVICE BEJALAN SEBAGAI PC
+-- ========================================================
+pcall(function()
+    -- Force UserInputService agar mendeteksi Keyboard & Mouse sebagai input utama
+    if UserInputService.TouchEnabled then
+        -- Hooking Metatable untuk memalsukan method platform
+        local rawMetatable = getrawmetatable(game)
+        local originalNamecall = rawMetatable.__namecall
+        local originalIndex = rawMetatable.__index
+        
+        setreadonly(rawMetatable, false)
+
+        rawMetatable.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            if self == UserInputService then
+                if method == "GetPlatform" then
+                    return Enum.Platform.Windows
+                elseif method == "GetLastInputType" then
+                    return Enum.UserInputType.Keyboard
+                end
+            end
+            return originalNamecall(self, ...)
+        end)
+
+        rawMetatable.__index = newcclosure(function(self, index)
+            if self == UserInputService then
+                if index == "TouchEnabled" then
+                    return false
+                elseif index == "KeyboardEnabled" or index == "MouseEnabled" then
+                    return true
+                elseif index == "GyroscopeEnabled" or index == "AccelerometerEnabled" then
+                    return false
+                end
+            end
+            return originalIndex(self, index)
+        end)
+
+        setreadonly(rawMetatable, true)
+    end
+end)
 
 local function getGuiParent()
     local parent = nil
@@ -95,7 +137,7 @@ local State = {
     
     SpawnFullHealth = false,
     InvisibleMode = false,
-    AntiSpectateAdmin = true, -- Fitur Anti-Spectate Aktif secara Default
+    AntiSpectateAdmin = true,
 
     CustomCrosshair = false,
     CrosshairType = "Silang (+)",
@@ -201,14 +243,12 @@ local function processAntiSpectateProtection()
     local myHum = myChar:FindFirstChildOfClass("Humanoid")
     local myRoot = myChar:FindFirstChild("HumanoidRootPart")
     
-    -- Proteksi 1: Batasi eksploitasi CameraSubject bawaan server (kecuali Freecam/Spectate UI internal sedang dipakai)
     if not State.FreecamEnabled and not State.SpectateEnabled then
         if Camera.CameraSubject and Camera.CameraSubject ~= myHum and not Camera.CameraSubject:IsDescendantOf(myChar) then
             Camera.CameraSubject = myHum
         end
     end
 
-    -- Proteksi 2: Deteksi Admin Invis Spectate Jarak Dekat
     if myRoot then
         for _, plr in ipairs(Players:GetPlayers()) do
             if plr ~= LocalPlayer and isAdminPlayer(plr) then
@@ -217,11 +257,10 @@ local function processAntiSpectateProtection()
                     local otherRoot = otherChar.HumanoidRootPart
                     local dist = (otherRoot.Position - myRoot.Position).Magnitude
                     
-                    -- Jika admin menempel sangat dekat (< 5 stud) & menggunakan transparansi tinggi (spectate mode)
                     if dist < 5 and otherRoot.Transparency > 0.7 then
                         for _, part in ipairs(myChar:GetChildren()) do
                             if part:IsA("BasePart") then
-                                part.LocalTransparencyModifier = 0 -- Pertahankan visibilitas lokal agar tidak hilang di layar pengguna
+                                part.LocalTransparencyModifier = 0
                             end
                         end
                     end
@@ -819,7 +858,7 @@ percentText.Parent = introCard
 task.spawn(function()
     local steps = {
         {p = 0.25, t = "INITIALIZING ENGINE CORE...", d = 0.8},
-        {p = 0.55, t = "INJECTING ANTI-SPECTATE ADMIN ENGINE...", d = 0.8},
+        {p = 0.55, t = "SPOOFING DEVICE PLATFORM TO PC...", d = 0.8},
         {p = 0.85, t = "OPTIMIZING FREECAM & ADVANCED SPECTATE...", d = 0.8},
         {p = 1.00, t = "SYSTEM READY! WELCOME NOPAL JLXC", d = 0.5}
     }
@@ -1208,12 +1247,10 @@ addSelector(combatTab, "Warna FOV Circle", colorList, 1, function(v)
     State.FOVColor = ColorMap[v] or Color3.fromRGB(0, 240, 255)
 end)
 
--- TOGGLE ANTI-SPECTATE ADMIN
 addToggle(combatTab, "Anti Spectate Admin", true, function(v)
     State.AntiSpectateAdmin = v
 end)
 
--- SPECTATE FITUR
 addToggle(combatTab, "Aktifkan Spectate System", false, function(v)
     State.SpectateEnabled = v
     specUI.Visible = v
@@ -1631,7 +1668,6 @@ end
 local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     if not State.ScriptActive then return end
 
-    -- MENJALANKAN PROTEKSI ANTI-SPECTATE REALTIME
     processAntiSpectateProtection()
 
     if State.InvisibleMode and LocalPlayer.Character then
