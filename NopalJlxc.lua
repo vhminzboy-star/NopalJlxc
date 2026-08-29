@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (ENHANCED SAFE BYPASS & COMBAT SECURITY)
+-- NOPAL JLXC — CPB JELYZX (FIXED & STABILIZED EDITION)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -11,7 +11,7 @@ if _G.JelyzxConnections then
 end
 _G.JelyzxConnections = {}
 
--- Utility String Randomizer untuk Stealth Naming & Drawing Keys
+-- Utility String Randomizer
 local function generateRandomName(length)
     local chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     local res = ""
@@ -45,13 +45,10 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
 -- ========================================================
--- [ADVANCED METATABLE & SPOOFER HOOK WITH CALLER PROTECTION]
+-- [SAFE SPOOFER HOOK]
 -- ========================================================
 pcall(function()
-    local rawMetatable = getrawmetatable and getrawmetatable(game)
-    local setReadonly = setreadonly or make_writeable
-
-    if hookmetamethod then
+    if hookmetamethod and checkcaller then
         local oldIndex
         oldIndex = hookmetamethod(game, "__index", newcclosure(function(self, index)
             if not checkcaller() and self == UserInputService then
@@ -76,36 +73,6 @@ pcall(function()
             end
             return oldNamecall(self, ...)
         end))
-    elseif rawMetatable and setReadonly then
-        local originalNamecall = rawMetatable.__namecall
-        local originalIndex = rawMetatable.__index
-        
-        setReadonly(rawMetatable, false)
-
-        rawMetatable.__namecall = newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            if not checkcaller() and self == UserInputService then
-                if method == "GetPlatform" then
-                    return Enum.Platform.Windows
-                elseif method == "GetLastInputType" then
-                    return Enum.UserInputType.Keyboard
-                end
-            end
-            return originalNamecall(self, ...)
-        end)
-
-        rawMetatable.__index = newcclosure(function(self, index)
-            if not checkcaller() and self == UserInputService then
-                if index == "TouchEnabled" or index == "GyroscopeEnabled" or index == "AccelerometerEnabled" then
-                    return false
-                elseif index == "KeyboardEnabled" or index == "MouseEnabled" then
-                    return true
-                end
-            end
-            return originalIndex(self, index)
-        end)
-
-        setReadonly(rawMetatable, true)
     end
 end)
 
@@ -223,21 +190,12 @@ local State = {
     FlyUp = false,
     FlyDown = false,
 
-    -- FREECAM STATE
     FreecamEnabled = false,
     FreecamSpeed = 2,
     FreecamSens = 1.2,
     FreecamUIScale = 1.0,
-    FreecamDir = {
-        Forward = false,
-        Backward = false,
-        Left = false,
-        Right = false,
-        Up = false,
-        Down = false
-    },
+    FreecamDir = { Forward = false, Backward = false, Left = false, Right = false, Up = false, Down = false },
 
-    -- SPECTATE STATE
     SpectateEnabled = false,
     SpectateTargetIndex = 1,
     SpectateTargetPlayer = nil,
@@ -304,7 +262,6 @@ local function processAntiSpectateProtection()
                     if otherChar and otherChar:FindFirstChild("HumanoidRootPart") then
                         local otherRoot = otherChar.HumanoidRootPart
                         local dist = (otherRoot.Position - myRoot.Position).Magnitude
-                        
                         if dist < 5 and otherRoot.Transparency > 0.7 then
                             for _, part in ipairs(myChar:GetChildren()) do
                                 if part:IsA("BasePart") then
@@ -321,7 +278,7 @@ end
 
 local CurrentActiveTarget = nil
 
--- SAFE DRAWING CREATOR WITH ERROR HANDLER
+-- SAFE DRAWING CREATOR
 local function safeDrawingNew(class)
     local obj = nil
     pcall(function()
@@ -364,7 +321,7 @@ local function hideAllCrosshair()
     if chCircle then chCircle.Visible = false end
 end
 
--- GUI BASE WITH RANDOMIZED IDENTITY
+-- GUI BASE
 local gui = Instance.new("ScreenGui")
 gui.Name = SECURE_GUI_NAME
 gui.ResetOnSpawn = false
@@ -428,9 +385,7 @@ btnDown.MouseButton1Down:Connect(function() State.FlyDown = true end)
 btnDown.MouseButton1Up:Connect(function() State.FlyDown = false end)
 btnDown.InputEnded:Connect(function() State.FlyDown = false end)
 
--- ========================================================
--- [FREECAM TOUCH UI SYSTEM]
--- ========================================================
+-- FREECAM TOUCH UI
 local freecamUI = Instance.new("Frame")
 freecamUI.Name = generateRandomName(10)
 freecamUI.Size = UDim2.new(1, 0, 1, 0)
@@ -580,9 +535,7 @@ local function toggleFreecamMode(enable)
     end
 end
 
--- ========================================================
--- [SPECTATE ENGINE SYSTEM]
--- ========================================================
+-- SPECTATE UI
 local specUI = Instance.new("Frame")
 specUI.Name = generateRandomName(10)
 specUI.Size = UDim2.new(1, 0, 1, 0)
@@ -775,7 +728,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- MAIN UI PANEL
+-- MAIN PANEL
 local main = Instance.new("Frame")
 main.Name = generateRandomName(12)
 main.Size = UDim2.new(0, 0, 0, 0)
@@ -794,7 +747,7 @@ mainStroke.Color = Color3.fromRGB(255, 45, 65)
 mainStroke.Thickness = 1.8
 mainStroke.Transparency = 0.15
 
--- OVERLAY INTRO & LOGO SHOWCASE
+-- INTRO OVERLAY
 local introBg = Instance.new("Frame")
 introBg.Name = "IntroOverlay"
 introBg.Size = UDim2.new(1, 0, 1, 0)
@@ -1277,14 +1230,14 @@ local function addSelector(parent, text, options, defaultIndex, callback)
     return frame
 end
 
--- TABS
+-- TABS SETUP
 local combatTab = createTab("Combat")
 local espTab = createTab("ESP Config")
 local moveTab = createTab("Movement")
 
 local colorList = {"Biru Cyan", "Hijau Neon", "Merah", "Kuning", "Ungu", "Pink Neon", "Oranye", "Putih", "Emas", "Lime", "Biru Tua"}
 
--- COMBAT TAB CONFIGURATIONS
+-- COMBAT TAB
 addToggle(combatTab, "Camera Lock (Aimjlxc)", false, function(v) State.AimjlxcEnabled = v end)
 addToggle(combatTab, "Instant Lock Mode", false, function(v) State.DirectLock = v end)
 addSlider(combatTab, "Smoothness Speed", 1, 50, 5, function(v) State.Smoothness = v / 50 end)
@@ -1371,7 +1324,6 @@ addToggle(moveTab, "Fly Mode UI (Hover Presisi)", false, function(v)
 end)
 addSlider(moveTab, "Fly Speed", 20, 500, 100, function(v) State.FlySpeed = v end)
 
--- FREECAM CONFIGS (DYNAMIC DISPLAY SLIDERS)
 local sliderSens, sliderFly, sliderScale
 
 addToggle(moveTab, "Freecam Mode (Touch UI)", false, function(v) 
@@ -1438,9 +1390,7 @@ local function getExactTargetPart(character)
     end
 end
 
--- ========================================================
--- [ENHANCED SAFE COMBAT ENGINE & WALL CHECK]
--- ========================================================
+-- COMBAT ENGINE & WALL CHECK
 local function checkWallObstructionBrutal(targetPart)
     if not targetPart or not targetPart.Parent then return false end
     local char = targetPart.Parent
@@ -1534,7 +1484,7 @@ end
 if LocalPlayer.Character then applyFullHealthOnSpawn(LocalPlayer.Character) end
 table.insert(_G.JelyzxConnections, LocalPlayer.CharacterAdded:Connect(applyFullHealthOnSpawn))
 
--- ESP ENGINE SAFE CREATION
+-- ESP ENGINE
 local ESPObjects = {}
 local function createDrawing(class, properties)
     local obj = safeDrawingNew(class)
@@ -1739,7 +1689,7 @@ local function updateESPPosition()
     end
 end
 
--- RENDER LOOP WITH COMBAT CALCULATION
+-- RENDER LOOP
 local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     if not State.ScriptActive then return end
 
@@ -1767,24 +1717,12 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         local rotCFrame = CFrame.Angles(0, freecamRotY, 0) * CFrame.Angles(freecamRotX, 0, 0)
         local moveVec = Vector3.new()
 
-        if State.FreecamDir.Forward or UserInputService:IsKeyDown(Enum.KeyCode.W) then
-            moveVec = moveVec + Vector3.new(0, 0, -1)
-        end
-        if State.FreecamDir.Backward or UserInputService:IsKeyDown(Enum.KeyCode.S) then
-            moveVec = moveVec + Vector3.new(0, 0, 1)
-        end
-        if State.FreecamDir.Left or UserInputService:IsKeyDown(Enum.KeyCode.A) then
-            moveVec = moveVec + Vector3.new(-1, 0, 0)
-        end
-        if State.FreecamDir.Right or UserInputService:IsKeyDown(Enum.KeyCode.D) then
-            moveVec = moveVec + Vector3.new(1, 0, 0)
-        end
-        if State.FreecamDir.Up or UserInputService:IsKeyDown(Enum.KeyCode.E) then
-            moveVec = moveVec + Vector3.new(0, 1, 0)
-        end
-        if State.FreecamDir.Down or UserInputService:IsKeyDown(Enum.KeyCode.Q) then
-            moveVec = moveVec + Vector3.new(0, -1, 0)
-        end
+        if State.FreecamDir.Forward or UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVec = moveVec + Vector3.new(0, 0, -1) end
+        if State.FreecamDir.Backward or UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVec = moveVec + Vector3.new(0, 0, 1) end
+        if State.FreecamDir.Left or UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVec = moveVec + Vector3.new(-1, 0, 0) end
+        if State.FreecamDir.Right or UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVec = moveVec + Vector3.new(1, 0, 0) end
+        if State.FreecamDir.Up or UserInputService:IsKeyDown(Enum.KeyCode.E) then moveVec = moveVec + Vector3.new(0, 1, 0) end
+        if State.FreecamDir.Down or UserInputService:IsKeyDown(Enum.KeyCode.Q) then moveVec = moveVec + Vector3.new(0, -1, 0) end
 
         local worldMove = rotCFrame:VectorToWorldSpace(moveVec * (State.FreecamSpeed * 0.8))
         freecamCFrame = CFrame.new(freecamCFrame.Position + worldMove) * rotCFrame
@@ -1896,10 +1834,8 @@ end
 
 table.insert(_G.JelyzxConnections, UserInputService.JumpRequest:Connect(triggerJump))
 
--- STEPPED PHYSICS WITH ANTI-DETECTIONS
+-- PHYSICS & MOVEMENT LOOP
 local spinAngle = 0
-local flyBodyVelocity = nil
-local flyBodyGyro = nil
 local desyncTick = 0
 
 local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
@@ -1954,20 +1890,6 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
             end
 
             if State.FlyEnabled and hrp and hum then
-                if not flyBodyVelocity or flyBodyVelocity.Parent ~= hrp then
-                    flyBodyVelocity = Instance.new("BodyVelocity")
-                    flyBodyVelocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-                    flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
-                    flyBodyVelocity.Parent = hrp
-                end
-
-                if not flyBodyGyro or flyBodyGyro.Parent ~= hrp then
-                    flyBodyGyro = Instance.new("BodyGyro")
-                    flyBodyGyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-                    flyBodyGyro.CFrame = hrp.CFrame
-                    flyBodyGyro.Parent = hrp
-                end
-
                 local moveDir = hum.MoveDirection
                 local targetYVelocity = 0
 
@@ -1975,15 +1897,9 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
                     targetYVelocity = State.FlySpeed
                 elseif State.FlyDown or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
                     targetYVelocity = -State.FlySpeed
-                else
-                    targetYVelocity = 0
                 end
 
-                flyBodyVelocity.Velocity = Vector3.new(moveDir.X * State.FlySpeed, targetYVelocity, moveDir.Z * State.FlySpeed)
-                flyBodyGyro.CFrame = Camera.CFrame
-            else
-                if flyBodyVelocity then flyBodyVelocity:Destroy(); flyBodyVelocity = nil end
-                if flyBodyGyro then flyBodyGyro:Destroy(); flyBodyGyro = nil end
+                hrp.AssemblyLinearVelocity = Vector3.new(moveDir.X * State.FlySpeed, targetYVelocity, moveDir.Z * State.FlySpeed)
             end
         end
     end)
@@ -2000,7 +1916,7 @@ LocalPlayer.Idled:Connect(function()
     end
 end)
 
--- CLEANUP & SAFE DESTROY
+-- CLEANUP & DESTROY
 closeBtn.MouseButton1Click:Connect(function()
     State.ScriptActive = false
     toggleFreecamMode(false)
@@ -2011,11 +1927,11 @@ closeBtn.MouseButton1Click:Connect(function()
         for _, l in ipairs(chLines) do if l then l:Remove() end end
         if chCircle then chCircle:Remove() end
     end)
-    if flyBodyVelocity then flyBodyVelocity:Destroy() end
-    if flyBodyGyro then flyBodyGyro:Destroy() end
+    
     Camera.CameraType = Enum.CameraType.Custom
     Camera.FieldOfView = 70
     Camera.CameraSubject = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    
     for _, conn in ipairs(_G.JelyzxConnections) do pcall(function() conn:Disconnect() end) end
     table.clear(_G.JelyzxConnections)
     for plr in pairs(ESPObjects) do removePlayerESP(plr) end
