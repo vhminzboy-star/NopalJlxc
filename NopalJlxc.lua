@@ -97,7 +97,7 @@ local State = {
     
     SpawnFullHealth = false,
     InvisibleMode = false,
-    AntiSpectateAdmin = false, -- FITUR BARU ANTI SPECTATE ADMIN
+    AntiSpectateAdmin = false,
 
     CustomCrosshair = false,
     CrosshairType = "Silang (+)",
@@ -150,7 +150,7 @@ local State = {
     SpectateIndex = 1,
     SpectateHidden = false,
 
-    -- FREECAM SYSTEM (UI DIREVISI TANPA ANALOG)
+    -- FREECAM SYSTEM
     FreecamEnabled = false,
     FreecamSpeed = 50,
     FreecamUp = false,
@@ -216,6 +216,17 @@ local function hideAllCrosshair()
     chCircle.Visible = false
 end
 
+-- HELPER: UISTROKE INDIVIDUAL
+local function addIndividualStroke(instance, color, thickness)
+    if not instance:FindFirstChildOfClass("UIStroke") then
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = color or Color3.fromRGB(255, 45, 65)
+        stroke.Thickness = thickness or 1.2
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Parent = instance
+    end
+end
+
 -- GUI BASE
 local gui = Instance.new("ScreenGui")
 gui.Name = "JELYZX_V20_FULL_GUI"
@@ -223,55 +234,57 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Parent = parentGui
 
+-- OVERHEAD SPEC WATERMARK (BISA DILIHAT DIMANA AJA)
+local specWatermark = Instance.new("TextLabel")
+specWatermark.Name = "SpecWatermark"
+specWatermark.Size = UDim2.new(0, 220, 0, 24)
+specWatermark.Position = UDim2.new(1, -230, 0, 10)
+specWatermark.BackgroundColor3 = Color3.fromRGB(15, 18, 26)
+specWatermark.BackgroundTransparency = 0.2
+specWatermark.Font = Enum.Font.GothamBold
+specWatermark.Text = "SPECTATING: OFF"
+specWatermark.TextColor3 = Color3.fromRGB(0, 240, 255)
+specWatermark.TextSize = 10
+specWatermark.Visible = false
+specWatermark.Parent = gui
+Instance.new("UICorner", specWatermark).CornerRadius = UDim.new(0, 6)
+addIndividualStroke(specWatermark, Color3.fromRGB(0, 240, 255), 1)
+
 -- FLY TOUCH UI
 local flyControls = Instance.new("Frame")
 flyControls.Name = "ModernFlyUI"
-flyControls.Size = UDim2.new(0, 75, 0, 160)
-flyControls.Position = UDim2.new(1, -90, 0.5, -80)
-flyControls.BackgroundColor3 = Color3.fromRGB(12, 15, 24)
-flyControls.BackgroundTransparency = 0.35
+flyControls.Size = UDim2.new(0, 70, 0, 150)
+flyControls.Position = UDim2.new(1, -80, 0.4, 0)
+flyControls.BackgroundTransparency = 1 -- Background dihilangkan
+flyControls.Active = false
 flyControls.Visible = false
 flyControls.Parent = gui
-Instance.new("UICorner", flyControls).CornerRadius = UDim.new(0, 16)
-
-local flyStroke = Instance.new("UIStroke", flyControls)
-flyStroke.Color = Color3.fromRGB(0, 240, 255)
-flyStroke.Thickness = 1.5
-flyStroke.Transparency = 0.3
-
-local flyTitle = Instance.new("TextLabel")
-flyTitle.Size = UDim2.new(1, 0, 0, 20)
-flyTitle.Position = UDim2.new(0, 0, 0, 4)
-flyTitle.BackgroundTransparency = 1
-flyTitle.Text = "FLY SYSTEM"
-flyTitle.Font = Enum.Font.GothamBlack
-flyTitle.TextColor3 = Color3.fromRGB(200, 210, 230)
-flyTitle.TextSize = 8
-flyTitle.Parent = flyControls
 
 local btnUp = Instance.new("TextButton")
-btnUp.Size = UDim2.new(0, 61, 0, 60)
-btnUp.Position = UDim2.new(0.5, -30, 0, 26)
+btnUp.Size = UDim2.new(0, 60, 0, 55)
+btnUp.Position = UDim2.new(0.5, -30, 0, 10)
 btnUp.BackgroundColor3 = Color3.fromRGB(20, 28, 45)
 btnUp.BackgroundTransparency = 0.2
 btnUp.Text = "▲\nUP"
 btnUp.TextColor3 = Color3.fromRGB(0, 255, 170)
 btnUp.Font = Enum.Font.GothamBlack
-btnUp.TextSize = 11
+btnUp.TextSize = 10
 btnUp.Parent = flyControls
-Instance.new("UICorner", btnUp).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", btnUp).CornerRadius = UDim.new(0, 10)
+addIndividualStroke(btnUp, Color3.fromRGB(0, 255, 170), 1)
 
 local btnDown = Instance.new("TextButton")
-btnDown.Size = UDim2.new(0, 61, 0, 60)
-btnDown.Position = UDim2.new(0.5, -30, 0, 92)
+btnDown.Size = UDim2.new(0, 60, 0, 55)
+btnDown.Position = UDim2.new(0.5, -30, 0, 75)
 btnDown.BackgroundColor3 = Color3.fromRGB(20, 28, 45)
 btnDown.BackgroundTransparency = 0.2
 btnDown.Text = "▼\nDOWN"
 btnDown.TextColor3 = Color3.fromRGB(255, 55, 80)
 btnDown.Font = Enum.Font.GothamBlack
-btnDown.TextSize = 11
+btnDown.TextSize = 10
 btnDown.Parent = flyControls
-Instance.new("UICorner", btnDown).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", btnDown).CornerRadius = UDim.new(0, 10)
+addIndividualStroke(btnDown, Color3.fromRGB(255, 55, 80), 1)
 
 btnUp.MouseButton1Down:Connect(function() State.FlyUp = true end)
 btnUp.MouseButton1Up:Connect(function() State.FlyUp = false end)
@@ -283,45 +296,46 @@ btnDown.InputEnded:Connect(function() State.FlyDown = false end)
 -- SPECTATE UI SYSTEM
 local spectateUI = Instance.new("Frame")
 spectateUI.Name = "SpectateSystemUI"
-spectateUI.Size = UDim2.new(0, 360, 0, 50)
-spectateUI.Position = UDim2.new(0.5, -180, 0.85, 0)
-spectateUI.BackgroundColor3 = Color3.fromRGB(12, 15, 24)
-spectateUI.BackgroundTransparency = 0.25
+spectateUI.Size = UDim2.new(0, 320, 0, 46)
+spectateUI.Position = UDim2.new(0.5, 0, 0.72, 0) -- Dinaikkan posisi agar tidak terlalu bawah
+spectateUI.AnchorPoint = Vector2.new(0.5, 0.5)
+spectateUI.BackgroundTransparency = 1 -- Transparan total
+spectateUI.Active = false
 spectateUI.Visible = false
 spectateUI.Parent = gui
-Instance.new("UICorner", spectateUI).CornerRadius = UDim.new(0, 12)
-
-local specStroke = Instance.new("UIStroke", spectateUI)
-specStroke.Color = Color3.fromRGB(255, 45, 65)
-specStroke.Thickness = 1.5
 
 local btnSpecPrev = Instance.new("TextButton")
-btnSpecPrev.Size = UDim2.new(0, 45, 0, 38)
-btnSpecPrev.Position = UDim2.new(0, 6, 0.5, -19)
-btnSpecPrev.BackgroundColor3 = Color3.fromRGB(25, 32, 48)
+btnSpecPrev.Size = UDim2.new(0, 40, 0, 36)
+btnSpecPrev.Position = UDim2.new(0, 0, 0.5, -18)
+btnSpecPrev.BackgroundColor3 = Color3.fromRGB(20, 26, 38)
 btnSpecPrev.Text = "◄"
 btnSpecPrev.TextColor3 = Color3.fromRGB(0, 240, 255)
 btnSpecPrev.Font = Enum.Font.GothamBlack
-btnSpecPrev.TextSize = 16
+btnSpecPrev.TextSize = 14
 btnSpecPrev.Parent = spectateUI
 Instance.new("UICorner", btnSpecPrev).CornerRadius = UDim.new(0, 8)
+addIndividualStroke(btnSpecPrev, Color3.fromRGB(0, 240, 255), 1)
 
 local btnSpecNext = Instance.new("TextButton")
-btnSpecNext.Size = UDim2.new(0, 45, 0, 38)
-btnSpecNext.Position = UDim2.new(1, -51, 0.5, -19)
-btnSpecNext.BackgroundColor3 = Color3.fromRGB(25, 32, 48)
+btnSpecNext.Size = UDim2.new(0, 40, 0, 36)
+btnSpecNext.Position = UDim2.new(1, -40, 0.5, -18)
+btnSpecNext.BackgroundColor3 = Color3.fromRGB(20, 26, 38)
 btnSpecNext.Text = "►"
 btnSpecNext.TextColor3 = Color3.fromRGB(0, 240, 255)
 btnSpecNext.Font = Enum.Font.GothamBlack
-btnSpecNext.TextSize = 16
+btnSpecNext.TextSize = 14
 btnSpecNext.Parent = spectateUI
 Instance.new("UICorner", btnSpecNext).CornerRadius = UDim.new(0, 8)
+addIndividualStroke(btnSpecNext, Color3.fromRGB(0, 240, 255), 1)
 
 local specInfoFrame = Instance.new("Frame")
-specInfoFrame.Size = UDim2.new(1, -160, 1, -8)
-specInfoFrame.Position = UDim2.new(0, 56, 0, 4)
-specInfoFrame.BackgroundTransparency = 1
+specInfoFrame.Size = UDim2.new(1, -140, 1, 0)
+specInfoFrame.Position = UDim2.new(0, 45, 0, 0)
+specInfoFrame.BackgroundColor3 = Color3.fromRGB(15, 18, 28)
+specInfoFrame.BackgroundTransparency = 0.2
 specInfoFrame.Parent = spectateUI
+Instance.new("UICorner", specInfoFrame).CornerRadius = UDim.new(0, 8)
+addIndividualStroke(specInfoFrame, Color3.fromRGB(255, 45, 65), 1)
 
 local specName = Instance.new("TextLabel")
 specName.Size = UDim2.new(1, 0, 0, 20)
@@ -336,7 +350,7 @@ specName.Parent = specInfoFrame
 
 local specStatus = Instance.new("TextLabel")
 specStatus.Size = UDim2.new(1, 0, 0, 18)
-specStatus.Position = UDim2.new(0, 0, 0, 22)
+specStatus.Position = UDim2.new(0, 0, 0, 20)
 specStatus.BackgroundTransparency = 1
 specStatus.Font = Enum.Font.GothamBold
 specStatus.Text = "HP: 100/100 | DIST: 0m"
@@ -346,15 +360,16 @@ specStatus.TextXAlignment = Enum.TextXAlignment.Center
 specStatus.Parent = specInfoFrame
 
 local btnSpecHide = Instance.new("TextButton")
-btnSpecHide.Size = UDim2.new(0, 48, 0, 38)
-btnSpecHide.Position = UDim2.new(1, -104, 0.5, -19)
-btnSpecHide.BackgroundColor3 = Color3.fromRGB(40, 48, 70)
+btnSpecHide.Size = UDim2.new(0, 45, 0, 36)
+btnSpecHide.Position = UDim2.new(1, -90, 0.5, -18)
+btnSpecHide.BackgroundColor3 = Color3.fromRGB(35, 42, 60)
 btnSpecHide.Text = "HIDE"
 btnSpecHide.TextColor3 = Color3.fromRGB(255, 255, 255)
 btnSpecHide.Font = Enum.Font.GothamBold
 btnSpecHide.TextSize = 9
 btnSpecHide.Parent = spectateUI
 Instance.new("UICorner", btnSpecHide).CornerRadius = UDim.new(0, 8)
+addIndividualStroke(btnSpecHide, Color3.fromRGB(180, 190, 210), 1)
 
 local btnSpecShowMini = Instance.new("TextButton")
 btnSpecShowMini.Size = UDim2.new(0, 60, 0, 24)
@@ -367,9 +382,7 @@ btnSpecShowMini.TextSize = 8
 btnSpecShowMini.Visible = false
 btnSpecShowMini.Parent = gui
 Instance.new("UICorner", btnSpecShowMini).CornerRadius = UDim.new(0, 6)
-local miniStroke = Instance.new("UIStroke", btnSpecShowMini)
-miniStroke.Color = Color3.fromRGB(0, 240, 255)
-miniStroke.Thickness = 1
+addIndividualStroke(btnSpecShowMini, Color3.fromRGB(0, 240, 255), 1)
 
 local function getSpectateList()
     local list = {}
@@ -380,12 +393,18 @@ local function getSpectateList()
 end
 
 local function updateSpectate()
-    if not State.SpectateEnabled then return end
+    if not State.SpectateEnabled then 
+        specWatermark.Visible = false
+        return 
+    end
+    
+    specWatermark.Visible = true
     local list = getSpectateList()
     if #list == 0 then
         Camera.CameraSubject = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         specName.Text = "NO PLAYERS FOUND"
         specStatus.Text = "-"
+        specWatermark.Text = "SPEC: NO PLAYERS"
         return
     end
 
@@ -403,9 +422,11 @@ local function updateSpectate()
 
         specName.Text = string.format("[%d/%d] %s", State.SpectateIndex, #list, targetPlr.Name:upper())
         specStatus.Text = string.format("HP: %d/%d | DIST: %dm", math.floor(hum.Health), math.floor(hum.MaxHealth), dist)
+        specWatermark.Text = string.format("SPEC [%s]: %d HP | %dm", targetPlr.Name, math.floor(hum.Health), dist)
     else
         specName.Text = string.format("[%d/%d] %s (DEAD)", State.SpectateIndex, #list, targetPlr.Name:upper())
         specStatus.Text = "WAITING FOR SPAWN..."
+        specWatermark.Text = string.format("SPEC [%s]: DEAD", targetPlr.Name)
     end
 end
 
@@ -429,45 +450,44 @@ btnSpecShowMini.MouseButton1Click:Connect(function()
     btnSpecShowMini.Visible = false
 end)
 
--- FREECAM TOUCH UI SYSTEM (TANPA ANALOG -> MENGGUNAKAN TOMBOL DIREKSI KANAN/KIRI/MAJU/MUNDUR)
+-- FREECAM TOUCH UI SYSTEM (TANPA BACKGROUND HITAM UTAMA)
 local freecamUI = Instance.new("Frame")
 freecamUI.Name = "FreecamControlsUI"
 freecamUI.Size = UDim2.new(1, 0, 1, 0)
 freecamUI.BackgroundTransparency = 1
+freecamUI.Active = false
 freecamUI.Visible = false
 freecamUI.Parent = gui
 
 -- FREECAM DIRECTIONAL BUTTONS (SISI KIRI)
 local freecamDirFrame = Instance.new("Frame")
-freecamDirFrame.Size = UDim2.new(0, 140, 0, 140)
-freecamDirFrame.Position = UDim2.new(0, 15, 1, -155)
-freecamDirFrame.BackgroundColor3 = Color3.fromRGB(12, 15, 24)
-freecamDirFrame.BackgroundTransparency = 0.4
+freecamDirFrame.Size = UDim2.new(0, 130, 0, 130)
+freecamDirFrame.Position = UDim2.new(0, 15, 0.65, 0) -- Diangkat posisi dari batas bawah
+freecamDirFrame.BackgroundTransparency = 1 -- Transparan total
+freecamDirFrame.Active = false
 freecamDirFrame.Parent = freecamUI
-Instance.new("UICorner", freecamDirFrame).CornerRadius = UDim.new(0, 16)
-local fcDirStroke = Instance.new("UIStroke", freecamDirFrame)
-fcDirStroke.Color = Color3.fromRGB(0, 240, 255)
-fcDirStroke.Thickness = 1.5
 
 local function makeFCBtn(name, text, pos, color)
     local btn = Instance.new("TextButton")
     btn.Name = name
-    btn.Size = UDim2.new(0, 42, 0, 42)
+    btn.Size = UDim2.new(0, 38, 0, 38)
     btn.Position = pos
     btn.BackgroundColor3 = Color3.fromRGB(20, 28, 45)
+    btn.BackgroundTransparency = 0.2
     btn.Text = text
     btn.TextColor3 = color or Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBlack
-    btn.TextSize = 12
+    btn.TextSize = 10
     btn.Parent = freecamDirFrame
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    addIndividualStroke(btn, color or Color3.fromRGB(0, 240, 255), 1)
     return btn
 end
 
-local fcFwd  = makeFCBtn("FC_Fwd", "▲\nMAJU", UDim2.new(0.5, -21, 0, 6), Color3.fromRGB(0, 240, 255))
-local fcBack = makeFCBtn("FC_Back", "▼\nMDR", UDim2.new(0.5, -21, 1, -48), Color3.fromRGB(0, 240, 255))
-local fcLeft = makeFCBtn("FC_Left", "◄\nKIRI", UDim2.new(0, 6, 0.5, -21), Color3.fromRGB(0, 240, 255))
-local fcRight= makeFCBtn("FC_Right", "►\nKNR", UDim2.new(1, -48, 0.5, -21), Color3.fromRGB(0, 240, 255))
+local fcFwd  = makeFCBtn("FC_Fwd", "▲\nMAJU", UDim2.new(0.5, -19, 0, 0), Color3.fromRGB(0, 240, 255))
+local fcBack = makeFCBtn("FC_Back", "▼\nMDR", UDim2.new(0.5, -19, 1, -38), Color3.fromRGB(0, 240, 255))
+local fcLeft = makeFCBtn("FC_Left", "◄\nKIRI", UDim2.new(0, 0, 0.5, -19), Color3.fromRGB(0, 240, 255))
+local fcRight= makeFCBtn("FC_Right", "►\nKNR", UDim2.new(1, -38, 0.5, -19), Color3.fromRGB(0, 240, 255))
 
 local function bindTouchBtn(btn, stateKey)
     btn.MouseButton1Down:Connect(function() State[stateKey] = true end)
@@ -482,58 +502,54 @@ bindTouchBtn(fcRight, "FreecamRight")
 
 -- FREECAM UP/DOWN BUTTONS (SISI KANAN)
 local freecamUpDown = Instance.new("Frame")
-freecamUpDown.Size = UDim2.new(0, 65, 0, 140)
-freecamUpDown.Position = UDim2.new(1, -80, 1, -155)
-freecamUpDown.BackgroundColor3 = Color3.fromRGB(12, 15, 24)
-freecamUpDown.BackgroundTransparency = 0.4
+freecamUpDown.Size = UDim2.new(0, 55, 0, 130)
+freecamUpDown.Position = UDim2.new(1, -70, 0.65, 0) -- Diangkat posisi dari batas bawah
+freecamUpDown.BackgroundTransparency = 1 -- Transparan total
+freecamUpDown.Active = false
 freecamUpDown.Parent = freecamUI
-Instance.new("UICorner", freecamUpDown).CornerRadius = UDim.new(0, 16)
-local fcUpDownStroke = Instance.new("UIStroke", freecamUpDown)
-fcUpDownStroke.Color = Color3.fromRGB(255, 45, 65)
-fcUpDownStroke.Thickness = 1.5
 
 local fcUp = Instance.new("TextButton")
-fcUp.Size = UDim2.new(0, 53, 0, 55)
-fcUp.Position = UDim2.new(0.5, -26, 0, 10)
+fcUp.Size = UDim2.new(0, 48, 0, 50)
+fcUp.Position = UDim2.new(0.5, -24, 0, 0)
 fcUp.BackgroundColor3 = Color3.fromRGB(20, 28, 45)
+fcUp.BackgroundTransparency = 0.2
 fcUp.Text = "▲\nUP"
 fcUp.TextColor3 = Color3.fromRGB(0, 255, 170)
 fcUp.Font = Enum.Font.GothamBlack
 fcUp.TextSize = 10
 fcUp.Parent = freecamUpDown
-Instance.new("UICorner", fcUp).CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", fcUp).CornerRadius = UDim.new(0, 8)
+addIndividualStroke(fcUp, Color3.fromRGB(0, 255, 170), 1)
 
 local fcDown = Instance.new("TextButton")
-fcDown.Size = UDim2.new(0, 53, 0, 55)
-fcDown.Position = UDim2.new(0.5, -26, 0, 75)
+fcDown.Size = UDim2.new(0, 48, 0, 50)
+fcDown.Position = UDim2.new(0.5, -24, 1, -50)
 fcDown.BackgroundColor3 = Color3.fromRGB(20, 28, 45)
+fcDown.BackgroundTransparency = 0.2
 fcDown.Text = "▼\nDOWN"
 fcDown.TextColor3 = Color3.fromRGB(255, 55, 80)
 fcDown.Font = Enum.Font.GothamBlack
 fcDown.TextSize = 10
 fcDown.Parent = freecamUpDown
-Instance.new("UICorner", fcDown).CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", fcDown).CornerRadius = UDim.new(0, 8)
+addIndividualStroke(fcDown, Color3.fromRGB(255, 55, 80), 1)
 
 bindTouchBtn(fcUp, "FreecamUp")
 bindTouchBtn(fcDown, "FreecamDown")
 
--- MAIN UI PANEL
+-- MAIN UI PANEL (REVISI POSISI DAN TRANSPARANSI)
 local main = Instance.new("Frame")
 main.Size = UDim2.new(0, 0, 0, 0)
-main.Position = UDim2.new(0.5, 0, 0.5, 0)
+main.Position = UDim2.new(0.5, 0, 0.42, 0) -- Posisi dinaikkan sedikit ke atas
 main.AnchorPoint = Vector2.new(0.5, 0.5)
 main.BackgroundColor3 = Color3.fromRGB(11, 13, 20)
-main.BackgroundTransparency = 0.25
+main.BackgroundTransparency = 0.15
 main.BorderSizePixel = 0
 main.ClipsDescendants = true
 main.Visible = false
 main.Parent = gui
 Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
-
-local mainStroke = Instance.new("UIStroke", main)
-mainStroke.Color = Color3.fromRGB(255, 45, 65)
-mainStroke.Thickness = 1.8
-mainStroke.Transparency = 0.15
+addIndividualStroke(main, Color3.fromRGB(255, 45, 65), 1.5)
 
 -- OVERLAY INTRO & LOGO SHOWCASE
 local introBg = Instance.new("Frame")
@@ -546,7 +562,7 @@ introBg.Parent = gui
 
 local introCard = Instance.new("Frame")
 introCard.Size = UDim2.new(0, 380, 0, 200)
-introCard.Position = UDim2.new(0.5, 0, 0.5, 20)
+introCard.Position = UDim2.new(0.5, 0, 0.5, 0)
 introCard.AnchorPoint = Vector2.new(0.5, 0.5)
 introCard.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
 introCard.BackgroundTransparency = 0.15
@@ -554,11 +570,7 @@ introCard.BorderSizePixel = 0
 introCard.ClipsDescendants = false
 introCard.Parent = introBg
 Instance.new("UICorner", introCard).CornerRadius = UDim.new(0, 16)
-
-local introStroke = Instance.new("UIStroke", introCard)
-introStroke.Color = Color3.fromRGB(255, 45, 65)
-introStroke.Thickness = 2
-introStroke.Transparency = 0.2
+addIndividualStroke(introCard, Color3.fromRGB(255, 45, 65), 1.5)
 
 local bgLogoOld = Instance.new("ImageLabel")
 bgLogoOld.Size = UDim2.new(1, 0, 1, 0)
@@ -636,11 +648,7 @@ barContainer.BackgroundColor3 = Color3.fromRGB(15, 18, 28)
 barContainer.BorderSizePixel = 0
 barContainer.Parent = introCard
 Instance.new("UICorner", barContainer).CornerRadius = UDim.new(1, 0)
-
-local barStroke = Instance.new("UIStroke", barContainer)
-barStroke.Color = Color3.fromRGB(255, 45, 65)
-barStroke.Thickness = 1.2
-barStroke.Transparency = 0.4
+addIndividualStroke(barContainer, Color3.fromRGB(255, 45, 65), 1)
 
 local barFill = Instance.new("Frame")
 barFill.Size = UDim2.new(0, 0, 1, 0)
@@ -732,6 +740,7 @@ logoHolder.BackgroundColor3 = Color3.fromRGB(22, 26, 38)
 logoHolder.BorderSizePixel = 0
 logoHolder.Parent = topBar
 Instance.new("UICorner", logoHolder).CornerRadius = UDim.new(0, 6)
+addIndividualStroke(logoHolder, Color3.fromRGB(255, 45, 65), 1)
 
 local logoIcon = Instance.new("ImageLabel")
 logoIcon.Size = UDim2.new(1, -4, 1, -4)
@@ -764,6 +773,7 @@ closeBtn.Font = Enum.Font.GothamBold
 closeBtn.TextSize = 10
 closeBtn.Parent = topBar
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 5)
+addIndividualStroke(closeBtn, Color3.fromRGB(255, 100, 100), 1)
 
 local minBtn = Instance.new("TextButton")
 minBtn.Size = UDim2.new(0, 20, 0, 20)
@@ -775,6 +785,7 @@ minBtn.Font = Enum.Font.GothamBold
 minBtn.TextSize = 12
 minBtn.Parent = topBar
 Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 5)
+addIndividualStroke(minBtn, Color3.fromRGB(100, 120, 150), 1)
 
 local sidebar = Instance.new("Frame")
 sidebar.Size = UDim2.new(0, 115, 1, -44)
@@ -824,13 +835,14 @@ local function createTab(name)
     local tabBtn = Instance.new("TextButton")
     tabBtn.Size = UDim2.new(1, 0, 0, 24)
     tabBtn.BackgroundColor3 = Color3.fromRGB(16, 20, 30)
-    tabBtn.BackgroundTransparency = 0.4
+    tabBtn.BackgroundTransparency = 0.2
     tabBtn.Text = name
     tabBtn.TextColor3 = Color3.fromRGB(140, 150, 175)
     tabBtn.Font = Enum.Font.GothamMedium
     tabBtn.TextSize = 8.5
     tabBtn.Parent = sidebar
     Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 5)
+    addIndividualStroke(tabBtn, Color3.fromRGB(40, 50, 70), 1)
 
     local container = Instance.new("ScrollingFrame")
     container.Size = UDim2.new(1, 0, 1, 0)
@@ -848,7 +860,7 @@ local function createTab(name)
     tabBtn.MouseButton1Click:Connect(function()
         for _, t in pairs(tabs) do
             t.Btn.BackgroundColor3 = Color3.fromRGB(16, 20, 30)
-            t.Btn.BackgroundTransparency = 0.4
+            t.Btn.BackgroundTransparency = 0.2
             t.Btn.TextColor3 = Color3.fromRGB(140, 150, 175)
             t.Container.Visible = false
         end
@@ -872,9 +884,10 @@ local function addToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -6, 0, 24)
     frame.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
-    frame.BackgroundTransparency = 0.3
+    frame.BackgroundTransparency = 0.2
     frame.Parent = parent
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 5)
+    addIndividualStroke(frame, Color3.fromRGB(35, 45, 65), 1)
 
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(0.7, 0, 1, 0)
@@ -917,9 +930,10 @@ local function addSlider(parent, text, min, max, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -6, 0, 26)
     frame.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
-    frame.BackgroundTransparency = 0.3
+    frame.BackgroundTransparency = 0.2
     frame.Parent = parent
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 5)
+    addIndividualStroke(frame, Color3.fromRGB(35, 45, 65), 1)
 
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(0.6, 0, 0, 12)
@@ -981,9 +995,10 @@ local function addSelector(parent, text, options, defaultIndex, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -6, 0, 24)
     frame.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
-    frame.BackgroundTransparency = 0.3
+    frame.BackgroundTransparency = 0.2
     frame.Parent = parent
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 5)
+    addIndividualStroke(frame, Color3.fromRGB(35, 45, 65), 1)
 
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(0.45, 0, 1, 0)
@@ -1006,6 +1021,7 @@ local function addSelector(parent, text, options, defaultIndex, callback)
     btn.TextSize = 8
     btn.Parent = frame
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+    addIndividualStroke(btn, Color3.fromRGB(255, 45, 65), 1)
 
     local currIndex = defaultIndex
     btn.MouseButton1Click:Connect(function()
@@ -1478,7 +1494,6 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         
         for _, plr in ipairs(Players:GetPlayers()) do
             if plr ~= LocalPlayer and isAdminPlayer(plr) then
-                -- Memutus jika admin mencoba mengarahkan kamera ke karakter kita
                 if plr.Character then
                     local pHum = plr.Character:FindFirstChildOfClass("Humanoid")
                     if pHum and pHum.CameraSubject == myHum then
@@ -1488,7 +1503,6 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
             end
         end
         
-        -- Proteksi posisi & transparansi lokal agar kamera lawan meleset
         if myChar:FindFirstChild("HumanoidRootPart") then
             myChar.HumanoidRootPart.CanQuery = false
         end
@@ -1508,7 +1522,7 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         end
     end
 
-    -- FREECAM CALCULATION (MENGGUNAKAN TOMBOL DIREKSI BARU)
+    -- FREECAM CALCULATION
     if State.FreecamEnabled then
         local fwdVel = (State.FreecamForward and 1 or 0) - (State.FreecamBackward and 1 or 0)
         local sideVel = (State.FreecamRight and 1 or 0) - (State.FreecamLeft and 1 or 0)
@@ -1647,7 +1661,6 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
             local hrp = char:FindFirstChild("HumanoidRootPart")
 
             if hum and hrp then
-                -- WALK SPEED BYPASS
                 hum.WalkSpeed = State.WalkSpeedVal
                 if State.WalkSpeedVal > 16 and hum.MoveDirection.Magnitude > 0 then
                     local targetVelocity = hum.MoveDirection * State.WalkSpeedVal
@@ -1658,7 +1671,6 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
                 hum.JumpPower = State.JumpPowerVal
             end
 
-            -- SUPER MOVEMENT SMOOTHNESS
             if State.SmoothMovement and hrp and hum then
                 local moveDir = hum.MoveDirection
                 if moveDir.Magnitude > 0 then
@@ -1667,7 +1679,6 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
                 end
             end
 
-            -- REAL DESYNC BLINK ENGINE
             if State.FiveMBlink and hrp and hum and not State.FlyEnabled then
                 if hum.MoveDirection.Magnitude > 0 then
                     desyncTick = desyncTick + 1
