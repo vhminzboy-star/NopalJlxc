@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (FIXED & STABILIZED EDITION)
+-- NOPAL JLXC — CPB JELYZX (STABILIZED & ANTI-DETECTION EDITION)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -44,38 +44,7 @@ local SoundService = Services.SoundService
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
--- ========================================================
--- [SAFE SPOOFER HOOK]
--- ========================================================
-pcall(function()
-    if hookmetamethod and checkcaller then
-        local oldIndex
-        oldIndex = hookmetamethod(game, "__index", newcclosure(function(self, index)
-            if not checkcaller() and self == UserInputService then
-                if index == "TouchEnabled" or index == "GyroscopeEnabled" or index == "AccelerometerEnabled" then
-                    return false
-                elseif index == "KeyboardEnabled" or index == "MouseEnabled" then
-                    return true
-                end
-            end
-            return oldIndex(self, index)
-        end))
-
-        local oldNamecall
-        oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            if not checkcaller() and self == UserInputService then
-                if method == "GetPlatform" then
-                    return Enum.Platform.Windows
-                elseif method == "GetLastInputType" then
-                    return Enum.UserInputType.Keyboard
-                end
-            end
-            return oldNamecall(self, ...)
-        end))
-    end
-end)
-
+-- GUI Parent Safe Retrieval (Metamethod-Hooking entfernt zur Vermeidung von Namecall-Detection)
 local function getGuiParent()
     local parent = nil
     pcall(function() if gethui then parent = gethui() end end)
@@ -882,9 +851,9 @@ percentText.Parent = introCard
 task.spawn(function()
     local steps = {
         {p = 0.25, t = "INITIALIZING SECURE ENGINE CORE...", d = 0.8},
-        {p = 0.55, t = "SPOOFING DEVICE PLATFORM VIA SECURE HOOK...", d = 0.8},
+        {p = 0.55, t = "LOADING SAFE COMBAT & SPECTATE ENGINE...", d = 0.8},
         {p = 0.85, t = "OPTIMIZING SAFE COMBAT & ADVANCED SPECTATE...", d = 0.8},
-        {p = 1.00, t = "BYPASS READY! WELCOME NOPAL JLXC", d = 0.5}
+        {p = 1.00, t = "SYSTEM READY! WELCOME NOPAL JLXC", d = 0.5}
     }
 
     local currentPercent = 0
