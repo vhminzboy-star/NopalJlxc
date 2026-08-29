@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — BETA CPB JELYZX (FIXED NORMAL POV SPEED BLINK)
+-- NOPAL JLXC — BETA CPB JELYZX (FIXED SPEED & SMOOTH DESYNC BLINK)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -842,7 +842,7 @@ addSlider(resoTab, "Curvature / Fisheye Roll", 1, 30, 18, function(v)
 end)
 
 -- MOVEMENT TAB
-addSlider(moveTab, "Walk Speed", 16, 500, 16, function(v) State.WalkSpeedVal = v end)
+addSlider(moveTab, "Walk Speed Bypass", 16, 300, 16, function(v) State.WalkSpeedVal = v end)
 addSlider(moveTab, "Jump Power", 50, 1000, 50, function(v) State.JumpPowerVal = v end)
 
 addToggle(moveTab, "Super Smooth Movement", false, function(v) State.SmoothMovement = v end)
@@ -1298,7 +1298,7 @@ table.insert(_G.JelyzxConnections, UserInputService.JumpRequest:Connect(triggerJ
 local spinAngle = 0
 local flyBodyVelocity = nil
 local flyBodyGyro = nil
-local blinkTick = 0
+local desyncTick = 0
 
 local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
     if not State.ScriptActive then return end
@@ -1308,8 +1308,14 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
             local hum = char:FindFirstChildOfClass("Humanoid")
             local hrp = char:FindFirstChild("HumanoidRootPart")
 
-            if hum then
+            if hum and hrp then
+                -- WALK SPEED BYPASS (Menembus sistem anti-speed game)
                 hum.WalkSpeed = State.WalkSpeedVal
+                if State.WalkSpeedVal > 16 and hum.MoveDirection.Magnitude > 0 then
+                    local targetVelocity = hum.MoveDirection * State.WalkSpeedVal
+                    hrp.AssemblyLinearVelocity = Vector3.new(targetVelocity.X, hrp.AssemblyLinearVelocity.Y, targetVelocity.Z)
+                end
+
                 hum.UseJumpPower = true
                 hum.JumpPower = State.JumpPowerVal
             end
@@ -1323,20 +1329,15 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
                 end
             end
 
-            -- REAL DESYNC BLINK ENGINE (0% speed boost di POV sendiri, murni lag simulation ke server)
+            -- REAL DESYNC BLINK ENGINE (Sangat mulus di POV kamu, teleport-blink di musuh)
             if State.FiveMBlink and hrp and hum and not State.FlyEnabled then
                 if hum.MoveDirection.Magnitude > 0 then
-                    blinkTick = blinkTick + 1
-                    local delayThreshold = math.clamp(12 - math.floor(State.BlinkIntensity / 3), 2, 10)
+                    desyncTick = desyncTick + 1
+                    local lagDelay = math.clamp(35 - State.BlinkIntensity, 5, 30)
                     
-                    if blinkTick % delayThreshold == 0 then
-                        -- Tahan pembaruan jaringan fisik secara singkat tanpa menyentuh CFrame
-                        sethiddenproperty(hrp, "NetworkIsWaitingForCollision", true)
-                        task.delay(0.03, function()
-                            if hrp then
-                                sethiddenproperty(hrp, "NetworkIsWaitingForCollision", false)
-                            end
-                        end)
+                    if desyncTick % lagDelay ~= 0 then
+                        -- Tahan pembaruan posisi fisik sementara dari server
+                        hrp.AssemblyLinearVelocity = hrp.AssemblyLinearVelocity * 0.05
                     end
                 end
             end
