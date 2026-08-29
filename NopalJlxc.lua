@@ -1440,5 +1440,3 @@ closeBtn.MouseButton1Click:Connect(function()
     for plr in pairs(ESPObjects) do removePlayerESP(plr) end
     gui:Destroy()
 end)
-
-Kirim langsung full scripnya kyk gini
