@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (STABILIZED & ANTI-DETECTION EDITION)
+-- NOPAL JLXC — CPB JELYZX (ULTRA BRUTAL & ZERO-DELAY EDITION)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -43,6 +43,9 @@ local SoundService = Services.SoundService
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
+
+-- AUTO-DETECT PC / MOBILE
+local IS_TOUCH_DEVICE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 -- GUI Parent Safe Retrieval
 local function getGuiParent()
@@ -108,15 +111,15 @@ local ColorMap = {
 
 local State = {
     AimjlxcEnabled = false,
-    Smoothness = 0.15, 
-    DirectLock = false,
+    Smoothness = 0.05, -- Dibuat jauh lebih tajam secara bawaan
+    DirectLock = true,  -- Default ke brutal mode
     TargetPart = "Head",
-    WallCheck = true,
-    AimPOVRadius = 150,
+    WallCheck = false,  -- Tetap tembus wall jika brutal
+    AimPOVRadius = 250,
     ShowAimPOV = false,
     AimPOVColor = Color3.fromRGB(0, 240, 255),
-    Prediction = false, 
-    PredictionMult = 0.013,
+    Prediction = true, 
+    PredictionMult = 0.022,
     LockColor = Color3.fromRGB(255, 30, 30),
     
     SpawnFullHealth = false,
@@ -297,7 +300,7 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Parent = parentGui
 
--- FLY TOUCH UI
+-- FLY TOUCH UI (Hanya dibuat jika Touch Device)
 local flyControls = Instance.new("Frame")
 flyControls.Name = generateRandomName(10)
 flyControls.Size = UDim2.new(0, 75, 0, 160)
@@ -485,7 +488,7 @@ end)
 
 local function toggleFreecamMode(enable)
     State.FreecamEnabled = enable
-    freecamUI.Visible = enable
+    freecamUI.Visible = enable and IS_TOUCH_DEVICE
     
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -661,42 +664,6 @@ btnHideCard.MouseButton1Click:Connect(function()
     end
 end)
 
-RunService.RenderStepped:Connect(function()
-    if State.SpectateEnabled and State.SpectateTargetPlayer then
-        pcall(function()
-            local targetPlr = State.SpectateTargetPlayer
-            local char = targetPlr.Character
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-
-            if char and hum and hrp then
-                if Camera.CameraSubject ~= hum then
-                    Camera.CameraSubject = hum
-                end
-
-                local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                local dist = myHrp and (myHrp.Position - hrp.Position).Magnitude or 0
-
-                local hp = math.floor(hum.Health)
-                local maxHp = math.floor(hum.MaxHealth)
-
-                local statusTags = {}
-                if isAdminPlayer(targetPlr) then table.insert(statusTags, "<font color=\"#FFD700\">[ADMIN/STAFF]</font>") end
-                if isGodmodePlayer(targetPlr) then table.insert(statusTags, "<font color=\"#FF0080\">[GODMODE]</font>") end
-                if targetPlr.Team then table.insert(statusTags, "<font color=\"#00F0FF\">[" .. tostring(targetPlr.Team.Name) .. "]</font>") end
-
-                if #statusTags == 0 then table.insert(statusTags, "<font color=\"#00FF96\">[PLAYER]</font>") end
-
-                targetNameLbl.Text = "TARGET: " .. targetPlr.Name .. " (@" .. targetPlr.DisplayName .. ")"
-                statusListLbl.Text = string.format("HP: %d/%d | DIST: %dm\nSTATUS: %s", hp, maxHp, math.floor(dist), table.concat(statusTags, " "))
-            else
-                targetNameLbl.Text = "TARGET: " .. targetPlr.Name .. " (DEAD)"
-                statusListLbl.Text = "HP: 0/0 | DIST: 0m\nSTATUS: RESPAWNING..."
-            end
-        end)
-    end
-end)
-
 -- MAIN PANEL
 local main = Instance.new("Frame")
 main.Name = generateRandomName(12)
@@ -789,15 +756,16 @@ task.spawn(function()
     end
 end)
 
+local devModeText = IS_TOUCH_DEVICE and "MOBILE MODE" or "PC MODE"
 local introTitle = Instance.new("TextLabel")
 introTitle.Size = UDim2.new(1, 0, 0, 26)
 introTitle.Position = UDim2.new(0, 0, 0, 50)
 introTitle.BackgroundTransparency = 1
 introTitle.Font = Enum.Font.GothamBlack
-introTitle.Text = "<font color=\"#FFFFFF\">NOPAL</font> <font color=\"#FF2D41\">JLXC</font> <font color=\"#00F0FF\">SYSTEM</font>"
+introTitle.Text = "<font color=\"#FFFFFF\">NOPAL</font> <font color=\"#FF2D41\">JLXC</font> <font color=\"#00F0FF\">["..devModeText.."]</font>"
 introTitle.RichText = true
 introTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-introTitle.TextSize = 17
+introTitle.TextSize = 16
 introTitle.Parent = introCard
 
 local statusText = Instance.new("TextLabel")
@@ -805,7 +773,7 @@ statusText.Size = UDim2.new(1, 0, 0, 16)
 statusText.Position = UDim2.new(0, 0, 0, 82)
 statusText.BackgroundTransparency = 1
 statusText.Font = Enum.Font.GothamBold
-statusText.Text = "INITIALIZING ENGINE CORE..."
+statusText.Text = "INITIALIZING SECURE CORE..."
 statusText.TextColor3 = Color3.fromRGB(0, 240, 255)
 statusText.TextSize = 9.5
 statusText.Parent = introCard
@@ -818,11 +786,6 @@ barContainer.BorderSizePixel = 0
 barContainer.Parent = introCard
 Instance.new("UICorner", barContainer).CornerRadius = UDim.new(1, 0)
 
-local barStroke = Instance.new("UIStroke", barContainer)
-barStroke.Color = Color3.fromRGB(255, 45, 65)
-barStroke.Thickness = 1.2
-barStroke.Transparency = 0.4
-
 local barFill = Instance.new("Frame")
 barFill.Size = UDim2.new(0, 0, 1, 0)
 barFill.BackgroundColor3 = Color3.fromRGB(255, 45, 65)
@@ -830,13 +793,6 @@ barFill.BorderSizePixel = 0
 barFill.ClipsDescendants = true
 barFill.Parent = barContainer
 Instance.new("UICorner", barFill).CornerRadius = UDim.new(1, 0)
-
-local barGradient = Instance.new("UIGradient", barFill)
-barGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 45, 65)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 120, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 240, 255))
-})
 
 local percentText = Instance.new("TextLabel")
 percentText.Size = UDim2.new(1, 0, 0, 16)
@@ -850,10 +806,9 @@ percentText.Parent = introCard
 
 task.spawn(function()
     local steps = {
-        {p = 0.25, t = "INITIALIZING SECURE ENGINE CORE...", d = 0.8},
-        {p = 0.55, t = "LOADING SAFE COMBAT & SPECTATE ENGINE...", d = 0.8},
-        {p = 0.85, t = "OPTIMIZING SAFE COMBAT & ADVANCED SPECTATE...", d = 0.8},
-        {p = 1.00, t = "SYSTEM READY! WELCOME NOPAL JLXC", d = 0.5}
+        {p = 0.35, t = "DETECTING PLATFORM: " .. devModeText, d = 0.4},
+        {p = 0.75, t = "CALIBRATING ULTRA-FAST AIM & ESP MATRIX...", d = 0.4},
+        {p = 1.00, t = "SYSTEM READY! WELCOME NOPAL JLXC", d = 0.3}
     }
 
     local currentPercent = 0
@@ -879,13 +834,13 @@ task.spawn(function()
         task.wait(step.d)
     end
     
-    task.wait(0.2)
+    task.wait(0.1)
     
-    local closeIntro = TweenService:Create(introCard, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+    local closeIntro = TweenService:Create(introCard, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
         Size = UDim2.new(0, 0, 0, 0),
         BackgroundTransparency = 1
     })
-    local fadeBg = TweenService:Create(introBg, TweenInfo.new(0.3), {BackgroundTransparency = 1})
+    local fadeBg = TweenService:Create(introBg, TweenInfo.new(0.2), {BackgroundTransparency = 1})
     
     closeIntro:Play()
     fadeBg:Play()
@@ -895,7 +850,7 @@ task.spawn(function()
     
     main.Visible = true
     playSound(SOUND_UI_OPEN, 0.7)
-    TweenService:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    TweenService:Create(main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, 420, 0, 260)
     }):Play()
 end)
@@ -923,18 +878,15 @@ logoIcon.ImageTransparency = 0
 logoIcon.Parent = logoHolder
 Instance.new("UICorner", logoIcon).CornerRadius = UDim.new(0, 4)
 
--- TITLE HEADER (FIXED LENGTH & AUTO SCALE)
 local titleLbl = Instance.new("TextLabel")
 titleLbl.Size = UDim2.new(0, 300, 1, 0)
 titleLbl.Position = UDim2.new(0, 46, 0, 0)
 titleLbl.BackgroundTransparency = 1
 titleLbl.Font = Enum.Font.GothamBlack
-titleLbl.Text = "NOPAL <font color=\"#FF2D41\">JLXC</font> <font color=\"#808080\">|</font> <font color=\"#808080\">BETA CPB JELYZX</font>"
+titleLbl.Text = "NOPAL <font color=\"#FF2D41\">JLXC</font> <font color=\"#808080\">|</font> <font color=\"#00F0FF\">" .. devModeText .. "</font>"
 titleLbl.RichText = true
 titleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLbl.TextSize = 10
-titleLbl.TextScaled = false
-titleLbl.TextWrapped = false
 titleLbl.TextXAlignment = Enum.TextXAlignment.Left
 titleLbl.Parent = topBar
 
@@ -1211,20 +1163,18 @@ local colorList = {"Biru Cyan", "Hijau Neon", "Merah", "Kuning", "Ungu", "Pink N
 
 -- COMBAT TAB
 addToggle(combatTab, "Camera Lock (Aimbot)", false, function(v) State.AimjlxcEnabled = v end)
-addSlider(combatTab, "Smoothness Speed", 1, 50, 5, function(v) State.Smoothness = v / 50 end)
-addToggle(combatTab, "Instant Lock Mode", false, function(v) State.DirectLock = v end)
-addToggle(combatTab, "Movement Prediction", false, function(v) State.Prediction = v end)
-addToggle(combatTab, "Wall Check", true, function(v) State.WallCheck = v end)
+addSlider(combatTab, "Smoothness Speed", 1, 50, 50, function(v) State.Smoothness = (51 - v) / 1000 end)
+addToggle(combatTab, "Instant Brutal Lock", true, function(v) State.DirectLock = v end)
+addToggle(combatTab, "Movement Prediction", true, function(v) State.Prediction = v end)
+addToggle(combatTab, "Wall Check", false, function(v) State.WallCheck = v end)
 addSelector(combatTab, "Target Part", {"Head", "Torso", "HumanoidRootPart"}, 1, function(v) State.TargetPart = v end)
 addToggle(combatTab, "Show FOV Circle", false, function(v) State.ShowAimPOV = v end)
-addSlider(combatTab, "AimPOV Radius", 50, 1500, 150, function(v) State.AimPOVRadius = v end)
+addSlider(combatTab, "AimPOV Radius", 50, 1500, 250, function(v) State.AimPOVRadius = v end)
 addSelector(combatTab, "Warna AimPOV Circle", colorList, 1, function(v)
     State.AimPOVColor = ColorMap[v] or Color3.fromRGB(0, 240, 255)
 end)
 
-addToggle(combatTab, "Anti Spectate Admin", true, function(v)
-    State.AntiSpectateAdmin = v
-end)
+addToggle(combatTab, "Anti Spectate Admin", true, function(v) State.AntiSpectateAdmin = v end)
 
 addToggle(combatTab, "Aktifkan Spectate System", false, function(v)
     State.SpectateEnabled = v
@@ -1290,24 +1240,22 @@ addSlider(moveTab, "Blink Intensity (Intensitas Lag)", 1, 30, 10, function(v) St
 
 addToggle(moveTab, "Infinite Jump", false, function(v) State.InfiniteJump = v end)
 addToggle(moveTab, "Noclip Mode", false, function(v) State.NoclipEnabled = v end)
-addToggle(moveTab, "Fly Mode UI (Hover Presisi)", false, function(v) 
+addToggle(moveTab, "Fly Mode (Hover Presisi)", false, function(v) 
     State.FlyEnabled = v 
-    flyControls.Visible = v
+    flyControls.Visible = v and IS_TOUCH_DEVICE
 end)
 addSlider(moveTab, "Fly Speed", 20, 500, 100, function(v) State.FlySpeed = v end)
 
 local sliderSens, sliderFly, sliderScale
 
-addToggle(moveTab, "Freecam Mode (Touch UI)", false, function(v) 
+addToggle(moveTab, "Freecam Mode", false, function(v) 
     toggleFreecamMode(v)
-    if sliderSens then sliderSens.Visible = v end
+    if sliderSens then sliderSens.Visible = v and IS_TOUCH_DEVICE end
     if sliderFly then sliderFly.Visible = v end
-    if sliderScale then sliderScale.Visible = v end
+    if sliderScale then sliderScale.Visible = v and IS_TOUCH_DEVICE end
 end)
 
-sliderSens = addSlider(moveTab, "Kecepatan Geser Layar", 1, 50, 12, function(v) 
-    State.FreecamSens = v / 10 
-end)
+sliderSens = addSlider(moveTab, "Kecepatan Geser Layar", 1, 50, 12, function(v) State.FreecamSens = v / 10 end)
 sliderFly = addSlider(moveTab, "Freecam Fly Speed", 1, 20, 2, function(v) State.FreecamSpeed = v end)
 sliderScale = addSlider(moveTab, "Ukuran Scale UI Freecam", 50, 150, 100, function(v)
     State.FreecamUIScale = v / 100
@@ -1362,7 +1310,6 @@ local function getExactTargetPart(character)
     end
 end
 
--- COMBAT ENGINE & WALL CHECK (OPTIMIZED & STABILIZED)
 local function checkWallObstructionBrutal(targetPart)
     if not targetPart or not targetPart.Parent then return false end
     local char = targetPart.Parent
@@ -1410,7 +1357,7 @@ local function isTargetValidForAimjlxc(targetPart)
     return true
 end
 
--- STICKY TARGET LOGIC
+-- STICKY TARGET LOGIC (BRUTAL LOCK)
 local function getBestTargetBrutal()
     if CurrentActiveTarget and isTargetValidForAimjlxc(CurrentActiveTarget) then 
         return CurrentActiveTarget 
@@ -1451,7 +1398,7 @@ end
 if LocalPlayer.Character then applyFullHealthOnSpawn(LocalPlayer.Character) end
 table.insert(_G.JelyzxConnections, LocalPlayer.CharacterAdded:Connect(applyFullHealthOnSpawn))
 
--- ESP ENGINE
+-- ESP ENGINE (ZERO LAG RENDER)
 local ESPObjects = {}
 local function createDrawing(class, properties)
     local obj = safeDrawingNew(class)
@@ -1505,6 +1452,7 @@ local function resetAllDrawings(draw)
     for _, item in pairs(draw) do if item then item.Visible = false end end
 end
 
+-- DIRECT FAST MATRIX DRAWING (NO DELAY)
 local function updateESPPosition()
     local viewX, viewY = Camera.ViewportSize.X, Camera.ViewportSize.Y
 
@@ -1656,8 +1604,8 @@ local function updateESPPosition()
     end
 end
 
--- RENDER LOOP (STABILIZED INSTANT LOCK & LERP FIX)
-local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
+-- ULTRA-FAST AIMBOT & CAMERA PIPELINE (PreRender Bypass Delay)
+local renderStepFunction = function(deltaTime)
     if not State.ScriptActive then return end
 
     processAntiSpectateProtection()
@@ -1688,8 +1636,8 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         if State.FreecamDir.Backward or UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVec = moveVec + Vector3.new(0, 0, 1) end
         if State.FreecamDir.Left or UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVec = moveVec + Vector3.new(-1, 0, 0) end
         if State.FreecamDir.Right or UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVec = moveVec + Vector3.new(1, 0, 0) end
-        if State.FreecamDir.Up or UserInputService:IsKeyDown(Enum.KeyCode.E) then moveVec = moveVec + Vector3.new(0, 1, 0) end
-        if State.FreecamDir.Down or UserInputService:IsKeyDown(Enum.KeyCode.Q) then moveVec = moveVec + Vector3.new(0, -1, 0) end
+        if State.FreecamDir.Up or UserInputService:IsKeyDown(Enum.KeyCode.E) or UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVec = moveVec + Vector3.new(0, 1, 0) end
+        if State.FreecamDir.Down or UserInputService:IsKeyDown(Enum.KeyCode.Q) or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveVec = moveVec + Vector3.new(0, -1, 0) end
 
         local worldMove = rotCFrame:VectorToWorldSpace(moveVec * (State.FreecamSpeed * 0.8))
         freecamCFrame = CFrame.new(freecamCFrame.Position + worldMove) * rotCFrame
@@ -1712,9 +1660,7 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
                 if State.DirectLock then
                     baseCFrame = targetCFrame
                 else
-                    local smoothness = math.clamp(State.Smoothness * 35, 1, 60)
-                    local lerpAlpha = 1 - math.exp(-smoothness * deltaTime)
-                    baseCFrame = Camera.CFrame:Lerp(targetCFrame, math.clamp(lerpAlpha, 0.01, 1))
+                    baseCFrame = Camera.CFrame:Lerp(targetCFrame, math.clamp(State.Smoothness, 0.01, 1))
                 end
             else
                 CurrentActiveTarget = nil
@@ -1779,8 +1725,14 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     end
 
     updateESPPosition()
-end)
-table.insert(_G.JelyzxConnections, mainRenderConn)
+end
+
+-- Hook Render Pipeline berdasarkan support Engine Executor
+if RunService.PreRender then
+    table.insert(_G.JelyzxConnections, RunService.PreRender:Connect(renderStepFunction))
+else
+    table.insert(_G.JelyzxConnections, RunService.RenderStepped:Connect(renderStepFunction))
+end
 
 -- INFINITE JUMP
 local function triggerJump()
