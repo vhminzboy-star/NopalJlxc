@@ -150,6 +150,9 @@ local State = {
     RealGepengEnabled = false,
     GepengRatio = 0.35,
 
+    Cam360Enabled = false,
+    Cam360Angle = 0,
+
     WalkSpeedVal = 16,
     JumpPowerVal = 50,
     NoclipEnabled = false,
@@ -218,7 +221,7 @@ local function processAntiSpectateProtection()
         local myHum = myChar:FindFirstChildOfClass("Humanoid")
         local myRoot = myChar:FindFirstChild("HumanoidRootPart")
         
-        if not State.FreecamEnabled and not State.SpectateEnabled then
+        if not State.FreecamEnabled and not State.SpectateEnabled and not State.Cam360Enabled then
             if Camera.CameraSubject and Camera.CameraSubject ~= myHum and not Camera.CameraSubject:IsDescendantOf(myChar) then
                 Camera.CameraSubject = myHum
             end
@@ -920,7 +923,7 @@ logoIcon.Position = UDim2.new(0, 2, 0, 2)
 logoIcon.BackgroundTransparency = 1
 logoIcon.Image = CUSTOM_LOGO_ID
 logoIcon.ImageTransparency = 0
-logoIcon.Parent = logoHolder
+logoIcon.Parent = topBar
 Instance.new("UICorner", logoIcon).CornerRadius = UDim.new(0, 4)
 
 -- TITLE HEADER
@@ -1204,6 +1207,7 @@ end
 
 -- TABS SETUP
 local combatTab = createTab("Combat")
+local visualTab = createTab("Visual & Display")
 local espTab = createTab("ESP Config")
 local moveTab = createTab("Movement")
 
@@ -1264,6 +1268,27 @@ end)
 addToggle(combatTab, "Hitbox Expander", false, function(v) State.HitboxExpander = v end)
 addSlider(combatTab, "Hitbox Size", 0, 100, 15, function(v) State.HitboxSize = v end)
 addToggle(combatTab, "Spawn Instant Full Health", false, function(v) State.SpawnFullHealth = v end)
+
+-- VISUAL & DISPLAY TAB
+addToggle(visualTab, "Layar Gepeng (Stretch Res)", false, function(v)
+    State.RealGepengEnabled = v
+end)
+addSlider(visualTab, "Kebangatan Gepeng", 10, 100, 35, function(v)
+    State.GepengRatio = v / 100
+end)
+
+addToggle(visualTab, "360 Cam View (POV 360°)", false, function(v)
+    State.Cam360Enabled = v
+    if not v then
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            Camera.CameraSubject = LocalPlayer.Character.Humanoid
+            Camera.CameraType = Enum.CameraType.Custom
+        end
+    end
+end)
+
+addToggle(visualTab, "Fisheye / Field of View 360", false, function(v) State.LYR360Enabled = v end)
+addSlider(visualTab, "Atur FOV Kamera", 70, 120, 120, function(v) State.LYR360Val = v end)
 
 -- ESP TAB
 addToggle(espTab, "Precision Box ESP", false, function(v) State.ESP_CornerBox = v end)
@@ -1694,6 +1719,13 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         local worldMove = rotCFrame:VectorToWorldSpace(moveVec * (State.FreecamSpeed * 0.8))
         freecamCFrame = CFrame.new(freecamCFrame.Position + worldMove) * rotCFrame
         Camera.CFrame = freecamCFrame
+    elseif State.Cam360Enabled then
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            State.Cam360Angle = (State.Cam360Angle + 1) % 360
+            local rootPos = LocalPlayer.Character.HumanoidRootPart.Position
+            local offset = Vector3.new(math.cos(math.rad(State.Cam360Angle)) * 12, 3, math.sin(math.rad(State.Cam360Angle)) * 12)
+            Camera.CFrame = CFrame.new(rootPos + offset, rootPos)
+        end
     elseif not State.SpectateEnabled then
         if State.AimjlxcEnabled then
             local targetPart = getBestTargetBrutal()
