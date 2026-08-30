@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (STABILIZED & ANTI-DETECTION EDITION)
+-- NOPAL JLXC — CPB JELYZX (STABILIZED & FIXED EDITION)
 -- Showcase Logo: https://create.roblox.com/store/asset/111989994218720
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -121,7 +121,6 @@ local State = {
     LockColor = Color3.fromRGB(255, 30, 30),
     
     SpawnFullHealth = false,
-    InvisibleMode = false,
     AntiSpectateAdmin = true,
 
     CustomCrosshair = false,
@@ -145,11 +144,11 @@ local State = {
     HitboxExpander = false,
     HitboxSize = 15,
 
-    -- VISUAL / DISPLAY
-    LYR360Enabled = true,
+    -- VISUAL / DISPLAY (SEKARANG DEFAULT FALSE UNTUK AKTIF MANUAL)
+    LYR360Enabled = false,
     LYR360Val = 120,
 
-    RealGepengEnabled = true,
+    RealGepengEnabled = false,
     GepengRatio = 0.35,
 
     WalkSpeedVal = 16,
@@ -190,7 +189,7 @@ local State = {
 local ColorGold = Color3.fromRGB(255, 215, 0)
 local ColorGodmode = Color3.fromRGB(255, 0, 128)
 
--- Helper Helper WorldToViewport yang mensupport Kompensasi Layar Gepeng
+-- Helper WorldToViewport yang mensupport Kompensasi Layar Gepeng Presisi
 local function worldToAdjustedViewportPoint(pos)
     local screenPos, onScreen = Camera:WorldToViewportPoint(pos)
     if State.RealGepengEnabled then
@@ -1250,23 +1249,6 @@ addToggle(combatTab, "Aktifkan Spectate System", State.SpectateEnabled, function
     end
 end)
 
-addToggle(combatTab, "Invisible Mode (Full Ghost)", State.InvisibleMode, function(v) 
-    State.InvisibleMode = v 
-    if not v and LocalPlayer.Character then
-        local myChar = LocalPlayer.Character
-        for _, p in ipairs(myChar:GetDescendants()) do
-            if p:IsA("BasePart") or p:IsA("Decal") or p:IsA("Texture") then
-                if p.Name ~= "HumanoidRootPart" then 
-                    p.Transparency = 0 
-                    if p:IsA("BasePart") then p.LocalTransparencyModifier = 0 end
-                end
-            elseif p:IsA("BillboardGui") or p:IsA("SurfaceGui") then
-                p.Enabled = true
-            end
-        end
-    end
-end)
-
 addToggle(combatTab, "Show Custom Crosshair", State.CustomCrosshair, function(v) State.CustomCrosshair = v end)
 addSelector(combatTab, "Model Crosshair", {"Silang (+)", "Dot (.)", "Kotak (Square)", "X-Shape (X)", "Lingkaran (Circle)"}, 1, function(v) State.CrosshairType = v end)
 addSelector(combatTab, "Warna Crosshair", colorList, 2, function(v)
@@ -1278,15 +1260,23 @@ addToggle(combatTab, "Hitbox Expander", State.HitboxExpander, function(v) State.
 addSlider(combatTab, "Hitbox Size", 0, 100, State.HitboxSize, function(v) State.HitboxSize = v end)
 addToggle(combatTab, "Spawn Instant Full Health", State.SpawnFullHealth, function(v) State.SpawnFullHealth = v end)
 
--- VISUAL & DISPLAY TAB
+-- VISUAL & DISPLAY TAB (DEFAULT DIBUAT OFF KEDUANYA)
 addToggle(visualTab, "Layar Gepeng (Stretch Res)", State.RealGepengEnabled, function(v)
     State.RealGepengEnabled = v
+    if not v then
+        Camera.FieldOfView = State.LYR360Enabled and State.LYR360Val or 70
+    end
 end)
 addSlider(visualTab, "Kebangatan Gepeng", 10, 100, math.floor(State.GepengRatio * 100), function(v)
     State.GepengRatio = v / 100
 end)
 
-addToggle(visualTab, "Wide FOV Lens (360)", State.LYR360Enabled, function(v) State.LYR360Enabled = v end)
+addToggle(visualTab, "Wide FOV Lens (360)", State.LYR360Enabled, function(v)
+    State.LYR360Enabled = v
+    if not v then
+        Camera.FieldOfView = 70
+    end
+end)
 addSlider(visualTab, "Atur FOV Kamera", 70, 120, State.LYR360Val, function(v) State.LYR360Val = v end)
 
 -- ESP TAB
@@ -1526,7 +1516,9 @@ table.insert(_G.JelyzxConnections, Players.PlayerAdded:Connect(setupPlayerESP))
 table.insert(_G.JelyzxConnections, Players.PlayerRemoving:Connect(removePlayerESP))
 
 local function resetAllDrawings(draw)
-    for _, item in pairs(draw) do if item then item.Visible = false end end
+    for _, item in pairs(draw) do 
+        if item then item.Visible = false end 
+    end
 end
 
 local function updateESPPosition()
@@ -1686,22 +1678,6 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
 
     processAntiSpectateProtection()
 
-    if State.InvisibleMode and LocalPlayer.Character then
-        pcall(function()
-            local myChar = LocalPlayer.Character
-            for _, item in ipairs(myChar:GetDescendants()) do
-                if item:IsA("BasePart") then
-                    item.Transparency = 1
-                    item.LocalTransparencyModifier = 1
-                elseif item:IsA("Decal") or item:IsA("Texture") then
-                    item.Transparency = 1
-                elseif item:IsA("BillboardGui") or item:IsA("SurfaceGui") then
-                    item.Enabled = false
-                end
-            end
-        end)
-    end
-
     local baseCFrame = Camera.CFrame
 
     if State.FreecamEnabled then
@@ -1757,6 +1733,7 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         end
     end
 
+    -- PENYESUAIAN RESOLUSI LAYAR GEPENG STABIL
     if State.RealGepengEnabled then
         baseCFrame = baseCFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, State.GepengRatio, 0, 0, 0, 1)
     end
