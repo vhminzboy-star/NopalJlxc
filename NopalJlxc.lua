@@ -1,6 +1,6 @@
 -- ========================================================
 -- NOPAL JLXC — CPB JELYZX (STABILIZED & ANTI-DETECTION EDITION)
--- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
+-- Showcase Logo: https://create.roblox.com/store/asset/111989994218720
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
 
@@ -70,7 +70,7 @@ end
 
 -- ASSETS ID
 local RAW_ID = "111989994218720"
-local SHOWCASE_ID = "129775661697970"
+local SHOWCASE_ID = "111989994218720"
 local CUSTOM_LOGO_ID = "rbxthumb://type=Asset&id=" .. RAW_ID .. "&w=420&h=420"
 local SHOWCASE_LOGO_ID = "rbxthumb://type=Asset&id=" .. SHOWCASE_ID .. "&w=420&h=420"
 
@@ -189,6 +189,16 @@ local State = {
 
 local ColorGold = Color3.fromRGB(255, 215, 0)
 local ColorGodmode = Color3.fromRGB(255, 0, 128)
+
+-- Helper Helper WorldToViewport yang mensupport Kompensasi Layar Gepeng
+local function worldToAdjustedViewportPoint(pos)
+    local screenPos, onScreen = Camera:WorldToViewportPoint(pos)
+    if State.RealGepengEnabled then
+        local centerY = Camera.ViewportSize.Y / 2
+        screenPos = Vector3.new(screenPos.X, centerY + (screenPos.Y - centerY) * State.GepengRatio, screenPos.Z)
+    end
+    return screenPos, onScreen
+end
 
 local function isAdminPlayer(plr)
     if not plr then return false end
@@ -1413,7 +1423,7 @@ local function isTargetValidForAimjlxc(targetPart)
         if State.ESP_TeamCheck and plr.Team and LocalPlayer.Team and plr.Team == LocalPlayer.Team then return false end
     end
 
-    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+    local screenPos, onScreen = worldToAdjustedViewportPoint(targetPart.Position)
     if not onScreen or screenPos.Z <= 0 then return false end
 
     local viewportCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -1439,7 +1449,7 @@ local function getBestTargetBrutal()
             local targetPart = getExactTargetPart(plr.Character)
             
             if targetPart and isTargetValidForAimjlxc(targetPart) then
-                local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+                local screenPos, onScreen = worldToAdjustedViewportPoint(targetPart.Position)
                 if onScreen and screenPos.Z > 0 then
                     local distFromCenter = (Vector2.new(screenPos.X, screenPos.Y) - viewportCenter).Magnitude
                     if distFromCenter < minDistance then
@@ -1556,10 +1566,10 @@ local function updateESPPosition()
                 end)
             end
 
-            local hrpPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+            local hrpPos, onScreen = worldToAdjustedViewportPoint(hrp.Position)
             if onScreen and hrpPos.Z > 0 then
-                local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
-                local legPos = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+                local headPos = worldToAdjustedViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                local legPos = worldToAdjustedViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
 
                 local height = math.abs(headPos.Y - legPos.Y)
                 local width = height * 0.65
@@ -1637,8 +1647,8 @@ local function updateESPPosition()
 
                     local function connectParts(lineObj, p1, p2)
                         if lineObj and p1 and p2 then
-                            local pos1 = Camera:WorldToViewportPoint(p1.Position)
-                            local pos2 = Camera:WorldToViewportPoint(p2.Position)
+                            local pos1 = worldToAdjustedViewportPoint(p1.Position)
+                            local pos2 = worldToAdjustedViewportPoint(p2.Position)
                             if pos1.Z > 0 and pos2.Z > 0 then
                                 lineObj.From = Vector2.new(pos1.X, pos1.Y)
                                 lineObj.To = Vector2.new(pos2.X, pos2.Y)
@@ -1707,7 +1717,7 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
 
         local worldMove = rotCFrame:VectorToWorldSpace(moveVec * (State.FreecamSpeed * 0.8))
         freecamCFrame = CFrame.new(freecamCFrame.Position + worldMove) * rotCFrame
-        Camera.CFrame = freecamCFrame
+        baseCFrame = freecamCFrame
     elseif not State.SpectateEnabled then
         if State.AimjlxcEnabled then
             local targetPart = getBestTargetBrutal()
@@ -1721,6 +1731,11 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
                 end
 
                 local camPos = Camera.CFrame.Position
+                local unscaledCamCFrame = Camera.CFrame
+                if State.RealGepengEnabled then
+                    unscaledCamCFrame = unscaledCamCFrame * CFrame.new(0,0,0, 1,0,0, 0,1/State.GepengRatio,0, 0,0,1)
+                end
+                
                 local targetCFrame = CFrame.lookAt(camPos, targetPos)
 
                 if State.DirectLock then
@@ -1728,7 +1743,7 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
                 else
                     local smoothness = math.clamp(State.Smoothness * 35, 1, 60)
                     local lerpAlpha = 1 - math.exp(-smoothness * deltaTime)
-                    baseCFrame = Camera.CFrame:Lerp(targetCFrame, math.clamp(lerpAlpha, 0.01, 1))
+                    baseCFrame = unscaledCamCFrame:Lerp(targetCFrame, math.clamp(lerpAlpha, 0.01, 1))
                 end
             else
                 CurrentActiveTarget = nil
@@ -1740,11 +1755,13 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         if State.LYR360Enabled then
             Camera.FieldOfView = State.LYR360Val
         end
+    end
 
-        if State.RealGepengEnabled then
-            baseCFrame = baseCFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, State.GepengRatio, 0, 0, 0, 1)
-        end
+    if State.RealGepengEnabled then
+        baseCFrame = baseCFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, State.GepengRatio, 0, 0, 0, 1)
+    end
 
+    if not State.SpectateEnabled then
         Camera.CFrame = baseCFrame
     end
 
