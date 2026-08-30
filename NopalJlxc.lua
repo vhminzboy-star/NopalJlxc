@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — BETA CPB JELYZX (FULL ESP & AIMBOT FIX FOR GEPENG & 360)
+-- NOPAL JLXC — BETA CPB JELYZX (FULL FIXED & EXPANDED)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -133,6 +133,14 @@ local State = {
     FlyUp = false,
     FlyDown = false,
 
+    -- SPECTATE & FREECAM & ANTI SPECTATE
+    SpectateEnabled = false,
+    SpectateTarget = nil,
+    FreecamEnabled = false,
+    FreecamSpeed = 1,
+    FreecamCFrame = CFrame.new(),
+    AntiAdminSpectate = true,
+
     SmoothMovement = false,
     SmoothFactor = 0.25,
     FiveMBlink = false,
@@ -203,6 +211,27 @@ gui.Name = "JELYZX_V20_FULL_GUI"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Parent = parentGui
+
+-- ALERT BANNER (ANTI SPECTATE WARNING)
+local alertBanner = Instance.new("Frame")
+alertBanner.Name = "AdminAlertBanner"
+alertBanner.Size = UDim2.new(0, 320, 0, 32)
+alertBanner.Position = UDim2.new(0.5, -160, 0, 15)
+alertBanner.BackgroundColor3 = Color3.fromRGB(255, 30, 30)
+alertBanner.BackgroundTransparency = 0.2
+alertBanner.Visible = false
+alertBanner.Parent = gui
+Instance.new("UICorner", alertBanner).CornerRadius = UDim.new(0, 8)
+
+local alertText = Instance.new("TextLabel")
+alertText.Size = UDim2.new(1, -10, 1, 0)
+alertText.Position = UDim2.new(0, 5, 0, 0)
+alertText.BackgroundTransparency = 1
+alertText.Font = Enum.Font.GothamBlack
+alertText.Text = "⚠️ ADMIN DETECTED SPECTATING YOU!"
+alertText.TextColor3 = Color3.fromRGB(255, 255, 255)
+alertText.TextSize = 10
+alertText.Parent = alertBanner
 
 -- FLY TOUCH UI
 local flyControls = Instance.new("Frame")
@@ -409,10 +438,10 @@ percentText.Parent = introCard
 
 task.spawn(function()
     local steps = {
-        {p = 0.25, t = "INITIALIZING ENGINE CORE...", d = 0.8},
-        {p = 0.55, t = "INJECTING SMOOTH MOTION & FIVEM BLINK...", d = 0.9},
-        {p = 0.85, t = "OPTIMIZING ESP & COMBAT SYSTEM...", d = 0.9},
-        {p = 1.00, t = "SYSTEM READY! WELCOME NOPAL JLXC", d = 0.6}
+        {p = 0.25, t = "INITIALIZING ENGINE CORE...", d = 0.6},
+        {p = 0.55, t = "LOADING SPECTATE & FREECAM ENGINE...", d = 0.6},
+        {p = 0.85, t = "ACTIVATING ANTI-SPECTATE GUARD...", d = 0.6},
+        {p = 1.00, t = "SYSTEM READY! WELCOME NOPAL JLXC", d = 0.4}
     }
 
     local currentPercent = 0
@@ -562,13 +591,13 @@ end)
 local tabs = {}
 local function createTab(name)
     local tabBtn = Instance.new("TextButton")
-    tabBtn.Size = UDim2.new(1, 0, 0, 24)
+    tabBtn.Size = UDim2.new(1, 0, 0, 20)
     tabBtn.BackgroundColor3 = Color3.fromRGB(16, 20, 30)
     tabBtn.BackgroundTransparency = 0.4
     tabBtn.Text = name
     tabBtn.TextColor3 = Color3.fromRGB(140, 150, 175)
     tabBtn.Font = Enum.Font.GothamMedium
-    tabBtn.TextSize = 8.5
+    tabBtn.TextSize = 8
     tabBtn.Parent = sidebar
     Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 5)
 
@@ -740,7 +769,7 @@ local function addSelector(parent, text, options, defaultIndex, callback)
     btn.Size = UDim2.new(0, 100, 0, 16)
     btn.Position = UDim2.new(1, -104, 0.5, -8)
     btn.BackgroundColor3 = Color3.fromRGB(26, 32, 46)
-    btn.Text = options[defaultIndex] .. " ▼"
+    btn.Text = tostring(options[defaultIndex] or "N/A") .. " ▼"
     btn.TextColor3 = Color3.fromRGB(255, 45, 65)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 8
@@ -749,17 +778,25 @@ local function addSelector(parent, text, options, defaultIndex, callback)
 
     local currIndex = defaultIndex
     btn.MouseButton1Click:Connect(function()
+        if #options == 0 then return end
         currIndex = (currIndex % #options) + 1
-        btn.Text = options[currIndex] .. " ▼"
-        callback(options[currIndex])
+        btn.Text = tostring(options[currIndex]) .. " ▼"
+        callback(options[currIndex], currIndex)
     end)
+    return function(newOptions)
+        options = newOptions
+        currIndex = 1
+        btn.Text = tostring(options[1] or "None") .. " ▼"
+    end
 end
 
--- TABS
+-- TABS CREATION
 local combatTab = createTab("Combat")
 local espTab = createTab("ESP Config")
 local resoTab = createTab("Visual & Display")
 local moveTab = createTab("Movement")
+local spectateTab = createTab("Spectate & Cam")
+local adminTab = createTab("Admin Guard")
 
 local colorList = {"Biru Cyan", "Hijau Neon", "Merah", "Kuning", "Ungu", "Pink Neon", "Oranye", "Putih", "Emas", "Lime", "Biru Tua"}
 
@@ -817,21 +854,33 @@ addToggle(espTab, "Head Dot ESP", false, function(v) State.ESP_HeadDots = v end)
 addToggle(espTab, "Overhead Name", false, function(v) State.ESP_Names = v end)
 addToggle(espTab, "Team Check", false, function(v) State.ESP_TeamCheck = v end)
 
--- VISUAL & DISPLAY
+-- VISUAL & DISPLAY (FIXED GEPENG & 360)
 addToggle(resoTab, "Layar Gepeng (Stretch Res)", false, function(v) 
     State.RealGepengEnabled = v 
-    if not v and not State.LYR360Enabled then Camera.FieldOfView = 70 end
+    if v then
+        State.LYR360Enabled = false
+        Camera.FieldOfView = State.GepengRatio
+    else
+        Camera.FieldOfView = 70
+    end
 end)
 addSlider(resoTab, "Kebangatan Gepeng", 70, 120, 90, function(v) 
     State.GepengRatio = v 
+    if State.RealGepengEnabled then Camera.FieldOfView = v end
 end)
 
 addToggle(resoTab, "360 Cam View (POV 360°)", false, function(v) 
     State.LYR360Enabled = v 
-    if not v and not State.RealGepengEnabled then Camera.FieldOfView = 70 end
+    if v then
+        State.RealGepengEnabled = false
+        Camera.FieldOfView = State.LYR360Val
+    else
+        Camera.FieldOfView = 70
+    end
 end)
 addSlider(resoTab, "Atur FOV Kamera", 70, 130, 110, function(v) 
     State.LYR360Val = v 
+    if State.LYR360Enabled then Camera.FieldOfView = v end
 end)
 
 -- MOVEMENT TAB
@@ -853,6 +902,56 @@ end)
 addSlider(moveTab, "Fly Speed", 20, 500, 100, function(v) State.FlySpeed = v end)
 addToggle(moveTab, "Spinbot Karakter (Muter)", false, function(v) State.SpinBotEnabled = v end)
 addSlider(moveTab, "Kecepatan Muter (Spin)", 10, 300, 50, function(v) State.SpinSpeed = v end)
+
+-- SPECTATE & FREECAM TAB (RESTORED FITUR HILANG)
+local function getPlayerNames()
+    local names = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then table.insert(names, p.Name) end
+    end
+    if #names == 0 then table.insert(names, "Tidak Ada Player") end
+    return names
+end
+
+local updateSpectateDropdown = addSelector(spectateTab, "Pilih Target Spectate", getPlayerNames(), 1, function(selectedName)
+    local target = Players:FindFirstChild(selectedName)
+    if target then State.SpectateTarget = target end
+end)
+
+addToggle(spectateTab, "Aktifkan Spectate Player", false, function(v)
+    State.SpectateEnabled = v
+    if not v then
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        end
+    end
+end)
+
+addToggle(spectateTab, "Freecam / Noclip Kamera", false, function(v)
+    State.FreecamEnabled = v
+    if v then
+        State.FreecamCFrame = Camera.CFrame
+    else
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            Camera.CameraType = Enum.CameraType.Custom
+            Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        end
+    end
+end)
+addSlider(spectateTab, "Kecepatan Freecam", 1, 10, 2, function(v) State.FreecamSpeed = v end)
+
+table.insert(_G.JelyzxConnections, Players.PlayerAdded:Connect(function()
+    updateSpectateDropdown(getPlayerNames())
+end))
+table.insert(_G.JelyzxConnections, Players.PlayerRemoving:Connect(function()
+    updateSpectateDropdown(getPlayerNames())
+end))
+
+-- ADMIN GUARD TAB (ANTI SPECTATE ADMIN)
+addToggle(adminTab, "Anti Admin Spectate", true, function(v) 
+    State.AntiAdminSpectate = v 
+    if not v then alertBanner.Visible = false end
+end)
 
 -- KEYBIND ROLLING (TOMBOL 'C')
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -1167,7 +1266,7 @@ local function updateESPPosition()
     end
 end
 
--- RENDER LOOP
+-- RENDER LOOP (FIXED Kamera Gepeng, 360, Freecam, Spectate)
 local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     if not State.ScriptActive then return end
 
@@ -1185,42 +1284,64 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         end
     end
 
-    local baseCFrame = Camera.CFrame
-    if State.AimbotEnabled then
-        local targetPart = getBestTargetBrutal()
-        if targetPart then
-            local targetPos = targetPart.Position
-            if State.Prediction and targetPart.Parent then
-                local hrp = targetPart.Parent:FindFirstChild("HumanoidRootPart")
-                if hrp then 
-                    targetPos = targetPos + (hrp.AssemblyLinearVelocity * State.PredictionMult) 
+    -- LOGIKA CAMERA & SPECTATE
+    if State.FreecamEnabled then
+        Camera.CameraType = Enum.CameraType.Scriptable
+        local moveVec = Vector3.new()
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVec = moveVec + (Camera.CFrame.LookVector) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVec = moveVec - (Camera.CFrame.LookVector) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVec = moveVec + (Camera.CFrame.RightVector) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVec = moveVec - (Camera.CFrame.RightVector) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.E) then moveVec = moveVec + Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Q) then moveVec = moveVec - Vector3.new(0, 1, 0) end
+
+        State.FreecamCFrame = State.FreecamCFrame + (moveVec * State.FreecamSpeed)
+        Camera.CFrame = State.FreecamCFrame
+    elseif State.SpectateEnabled and State.SpectateTarget and State.SpectateTarget.Character then
+        local targetHum = State.SpectateTarget.Character:FindFirstChildOfClass("Humanoid")
+        if targetHum then
+            Camera.CameraType = Enum.CameraType.Custom
+            Camera.CameraSubject = targetHum
+        end
+    else
+        local baseCFrame = Camera.CFrame
+        if State.AimbotEnabled then
+            local targetPart = getBestTargetBrutal()
+            if targetPart then
+                local targetPos = targetPart.Position
+                if State.Prediction and targetPart.Parent then
+                    local hrp = targetPart.Parent:FindFirstChild("HumanoidRootPart")
+                    if hrp then 
+                        targetPos = targetPos + (hrp.AssemblyLinearVelocity * State.PredictionMult) 
+                    end
                 end
-            end
 
-            local camPos = Camera.CFrame.Position
-            local targetCFrame = CFrame.lookAt(camPos, targetPos)
+                local camPos = Camera.CFrame.Position
+                local targetCFrame = CFrame.lookAt(camPos, targetPos)
 
-            if State.DirectLock then
-                baseCFrame = targetCFrame
+                if State.DirectLock then
+                    baseCFrame = targetCFrame
+                else
+                    local smoothness = math.clamp(State.Smoothness * 50, 1, 50)
+                    local lerpAlpha = 1 - math.exp(-smoothness * deltaTime)
+                    baseCFrame = Camera.CFrame:Lerp(targetCFrame, math.clamp(lerpAlpha, 0.01, 1))
+                end
             else
-                local smoothness = math.clamp(State.Smoothness * 50, 1, 50)
-                local lerpAlpha = 1 - math.exp(-smoothness * deltaTime)
-                baseCFrame = Camera.CFrame:Lerp(targetCFrame, math.clamp(lerpAlpha, 0.01, 1))
+                CurrentActiveTarget = nil
             end
         else
             CurrentActiveTarget = nil
         end
-    else
-        CurrentActiveTarget = nil
+
+        Camera.CFrame = baseCFrame
     end
 
-    if State.LYR360Enabled then
-        Camera.FieldOfView = State.LYR360Val
-    elseif State.RealGepengEnabled then
+    -- LOGIKA FIX LAYAR GEPENG DAN 360
+    if State.RealGepengEnabled then
         Camera.FieldOfView = State.GepengRatio
+    elseif State.LYR360Enabled then
+        Camera.FieldOfView = State.LYR360Val
     end
-
-    Camera.CFrame = baseCFrame
 
     local viewportCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     fovCircle.Position = viewportCenter
@@ -1265,6 +1386,38 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     updateESPPosition()
 end)
 table.insert(_G.JelyzxConnections, mainRenderConn)
+
+-- ANTI ADMIN SPECTATE SYSTEM
+task.spawn(function()
+    while task.wait(1) do
+        if State.AntiAdminSpectate and State.ScriptActive then
+            local adminWatching = false
+            local adminName = ""
+
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer and isAdminPlayer(plr) then
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        -- Cek jarak kamera admin ke karakter kita
+                        local adminCam = Workspace.CurrentCamera
+                        if (adminCam.CFrame.Position - char.HumanoidRootPart.Position).Magnitude < 15 then
+                            adminWatching = true
+                            adminName = plr.Name
+                            break
+                        end
+                    end
+                end
+            end
+
+            if adminWatching then
+                alertText.Text = "⚠️ ADMIN WATCHING YOU: " .. adminName:upper()
+                alertBanner.Visible = true
+            else
+                alertBanner.Visible = false
+            end
+        end
+    end
+end)
 
 -- INFINITE JUMP
 local function triggerJump()
@@ -1393,6 +1546,9 @@ closeBtn.MouseButton1Click:Connect(function()
     if flyBodyGyro then flyBodyGyro:Destroy() end
     Camera.CameraType = Enum.CameraType.Custom
     Camera.FieldOfView = 70
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    end
     for _, conn in ipairs(_G.JelyzxConnections) do pcall(function() conn:Disconnect() end) end
     table.clear(_G.JelyzxConnections)
     for plr in pairs(ESPObjects) do removePlayerESP(plr) end
