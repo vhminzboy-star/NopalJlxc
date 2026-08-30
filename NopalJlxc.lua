@@ -106,23 +106,22 @@ local ColorMap = {
     ["Biru Tua"]   = Color3.fromRGB(30, 144, 255)
 }
 
--- STATE FITUR (ALL FALSE DEFAULT)
 local State = {
     -- COMBAT & AIMBOT
-    AimjlxcEnabled = false,
+    AimjlxcEnabled = true,
     Smoothness = 0.15, 
-    DirectLock = false,
+    DirectLock = true,
     TargetPart = "Head",
-    WallCheck = false,
+    WallCheck = true,
     AimPOVRadius = 150,
-    ShowAimPOV = false,
+    ShowAimPOV = true,
     AimPOVColor = Color3.fromRGB(0, 240, 255),
     Prediction = false, 
     PredictionMult = 0.013,
     LockColor = Color3.fromRGB(255, 30, 30),
     
     SpawnFullHealth = false,
-    AntiSpectateAdmin = false,
+    AntiSpectateAdmin = true,
 
     CustomCrosshair = false,
     CrosshairType = "Silang (+)",
@@ -130,13 +129,13 @@ local State = {
     CrosshairColor = Color3.fromRGB(0, 255, 150),
 
     -- ESP SYSTEM
-    ESP_CornerBox = false,
-    ESP_HealthBar = false,
-    ESP_Skeleton = false,
-    ESP_Tracers = false,
+    ESP_CornerBox = true,
+    ESP_HealthBar = true,
+    ESP_Skeleton = true,
+    ESP_Tracers = true,
     ESP_TracerPos = "Bawah Tengah",
-    ESP_HeadDots = false,
-    ESP_Names = false,
+    ESP_HeadDots = true,
+    ESP_Names = true,
     ESP_TeamCheck = false,
     ESP_MaxDistance = 999999,
     ESPColor = Color3.fromRGB(0, 240, 255),
@@ -145,11 +144,11 @@ local State = {
     HitboxExpander = false,
     HitboxSize = 15,
 
-    -- VISUAL / DISPLAY
-    LYR360Enabled = false,
+    -- VISUAL / DISPLAY (RE-ENGINEERED)
+    LYR360Enabled = true,
     LYR360Val = 120,
 
-    RealGepengEnabled = false,
+    RealGepengEnabled = true,
     GepengRatio = 0.35,
 
     WalkSpeedVal = 16,
@@ -738,8 +737,8 @@ introBg.BorderSizePixel = 0
 introBg.Parent = gui
 
 local introCard = Instance.new("Frame")
-introCard.Size = UDim2.new(0, 380, 0, 220)
-introCard.Position = UDim2.new(0.5, 0, 0.5, 0)
+introCard.Size = UDim2.new(0, 380, 0, 200)
+introCard.Position = UDim2.new(0.5, 0, 0.5, 20)
 introCard.AnchorPoint = Vector2.new(0.5, 0.5)
 introCard.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
 introCard.BackgroundTransparency = 0.15
@@ -762,7 +761,6 @@ bgLogoOld.ImageTransparency = 0.20
 bgLogoOld.ScaleType = Enum.ScaleType.Fit
 bgLogoOld.Parent = introCard
 
--- LOGO SHOWCASE INTRO (POSISI DIPERBAIKI BIAR TIDAK MENIMPA TEKS)
 local showcaseLogo = Instance.new("ImageLabel")
 showcaseLogo.Size = UDim2.new(0, 110, 0, 110)
 showcaseLogo.Position = UDim2.new(0.5, 0, 0, -180)
@@ -775,7 +773,7 @@ showcaseLogo.Parent = introCard
 
 local entranceTween = TweenService:Create(showcaseLogo, TweenInfo.new(1.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
     Size = UDim2.new(0, 72, 0, 72),
-    Position = UDim2.new(0.5, 0, 0, 42),
+    Position = UDim2.new(0.5, 0, 0, -38),
     ImageTransparency = 0,
     Rotation = 0
 })
@@ -786,7 +784,7 @@ task.spawn(function()
     while showcaseLogo and showcaseLogo.Parent do
         local t1 = TweenService:Create(showcaseLogo, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
             Size = UDim2.new(0, 68, 0, 68),
-            Position = UDim2.new(0.5, 0, 0, 44),
+            Position = UDim2.new(0.5, 0, 0, -36),
             ImageTransparency = 0.45
         })
         t1:Play()
@@ -794,7 +792,7 @@ task.spawn(function()
 
         local t2 = TweenService:Create(showcaseLogo, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
             Size = UDim2.new(0, 76, 0, 76),
-            Position = UDim2.new(0.5, 0, 0, 40),
+            Position = UDim2.new(0.5, 0, 0, -40),
             ImageTransparency = 0
         })
         t2:Play()
@@ -804,7 +802,7 @@ end)
 
 local introTitle = Instance.new("TextLabel")
 introTitle.Size = UDim2.new(1, 0, 0, 26)
-introTitle.Position = UDim2.new(0, 0, 0, 95)
+introTitle.Position = UDim2.new(0, 0, 0, 50)
 introTitle.BackgroundTransparency = 1
 introTitle.Font = Enum.Font.GothamBlack
 introTitle.Text = "<font color=\"#FFFFFF\">NOPAL</font> <font color=\"#FF2D41\">JLXC</font> <font color=\"#00F0FF\">SYSTEM</font>"
@@ -815,7 +813,7 @@ introTitle.Parent = introCard
 
 local statusText = Instance.new("TextLabel")
 statusText.Size = UDim2.new(1, 0, 0, 16)
-statusText.Position = UDim2.new(0, 0, 0, 128)
+statusText.Position = UDim2.new(0, 0, 0, 82)
 statusText.BackgroundTransparency = 1
 statusText.Font = Enum.Font.GothamBold
 statusText.Text = "INITIALIZING ENGINE CORE..."
@@ -825,7 +823,7 @@ statusText.Parent = introCard
 
 local barContainer = Instance.new("Frame")
 barContainer.Size = UDim2.new(0, 300, 0, 12)
-barContainer.Position = UDim2.new(0.5, -150, 0, 155)
+barContainer.Position = UDim2.new(0.5, -150, 0, 110)
 barContainer.BackgroundColor3 = Color3.fromRGB(15, 18, 28)
 barContainer.BorderSizePixel = 0
 barContainer.Parent = introCard
@@ -853,7 +851,7 @@ barGradient.Color = ColorSequence.new({
 
 local percentText = Instance.new("TextLabel")
 percentText.Size = UDim2.new(1, 0, 0, 16)
-percentText.Position = UDim2.new(0, 0, 0, 175)
+percentText.Position = UDim2.new(0, 0, 0, 130)
 percentText.BackgroundTransparency = 1
 percentText.Font = Enum.Font.GothamBlack
 percentText.Text = "0%"
@@ -919,10 +917,27 @@ topBar.Size = UDim2.new(1, 0, 0, 38)
 topBar.BackgroundTransparency = 1
 topBar.Parent = main
 
--- TITLE HEADER (FOTO ICON KE 1 DIHAPUS, HEADER DIPINDAHKAN KE KIRI REPOSISI AKURAT)
+local logoHolder = Instance.new("Frame")
+logoHolder.Size = UDim2.new(0, 32, 0, 32)
+logoHolder.Position = UDim2.new(0, 8, 0.5, -16)
+logoHolder.BackgroundColor3 = Color3.fromRGB(22, 26, 38)
+logoHolder.BorderSizePixel = 0
+logoHolder.Parent = topBar
+Instance.new("UICorner", logoHolder).CornerRadius = UDim.new(0, 6)
+
+local logoIcon = Instance.new("ImageLabel")
+logoIcon.Size = UDim2.new(1, -4, 1, -4)
+logoIcon.Position = UDim2.new(0, 2, 0, 2)
+logoIcon.BackgroundTransparency = 1
+logoIcon.Image = SHOWCASE_LOGO_ID -- UPDATED USE ID 129775661697970
+logoIcon.ImageTransparency = 0
+logoIcon.Parent = logoHolder
+Instance.new("UICorner", logoIcon).CornerRadius = UDim.new(0, 4)
+
+-- TITLE HEADER
 local titleLbl = Instance.new("TextLabel")
 titleLbl.Size = UDim2.new(0, 300, 1, 0)
-titleLbl.Position = UDim2.new(0, 14, 0, 0)
+titleLbl.Position = UDim2.new(0, 46, 0, 0)
 titleLbl.BackgroundTransparency = 1
 titleLbl.Font = Enum.Font.GothamBlack
 titleLbl.Text = "NOPAL <font color=\"#FF2D41\">JLXC</font> <font color=\"#808080\">|</font> <font color=\"#808080\">BETA CPB JELYZX</font>"
@@ -1654,7 +1669,7 @@ local function updateESPPosition()
     end
 end
 
--- RENDER LOOP
+-- RENDER LOOP (STABILIZED & RE-ENGINEERED FOR FOV & GEPENG)
 local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     if not State.ScriptActive then return end
 
@@ -1711,6 +1726,7 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     if State.LYR360Enabled then
         local targetFOV = State.LYR360Val
         if State.RealGepengEnabled then
+            -- Penyesuaian FOV Efektif Vertikal saat Gepeng diaktifkan
             targetFOV = math.clamp(targetFOV / State.GepengRatio, 1, 175)
         end
         Camera.FieldOfView = targetFOV
