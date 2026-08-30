@@ -148,7 +148,6 @@ local State = {
     -- VISUAL / DISPLAY
     LYR360Enabled = true,
     LYR360Val = 120,
-    LYRFisheyeDegree = 1.8,
 
     RealGepengEnabled = true,
     GepengRatio = 0.35,
@@ -921,9 +920,9 @@ local logoIcon = Instance.new("ImageLabel")
 logoIcon.Size = UDim2.new(1, -4, 1, -4)
 logoIcon.Position = UDim2.new(0, 2, 0, 2)
 logoIcon.BackgroundTransparency = 1
-logoIcon.Image = CUSTOM_LOGO_ID
+logoIcon.Image = SHOWCASE_LOGO_ID
 logoIcon.ImageTransparency = 0
-logoIcon.Parent = topBar
+logoIcon.Parent = logoHolder
 Instance.new("UICorner", logoIcon).CornerRadius = UDim.new(0, 4)
 
 -- TITLE HEADER
@@ -1277,7 +1276,7 @@ addSlider(visualTab, "Kebangatan Gepeng", 10, 100, math.floor(State.GepengRatio 
     State.GepengRatio = v / 100
 end)
 
-addToggle(visualTab, "Fisheye FOV Lens", State.LYR360Enabled, function(v) State.LYR360Enabled = v end)
+addToggle(visualTab, "Wide FOV Lens (360)", State.LYR360Enabled, function(v) State.LYR360Enabled = v end)
 addSlider(visualTab, "Atur FOV Kamera", 70, 120, State.LYR360Val, function(v) State.LYR360Val = v end)
 
 -- ESP TAB
@@ -1740,8 +1739,6 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
 
         if State.LYR360Enabled then
             Camera.FieldOfView = State.LYR360Val
-            local fisheyeOffset = CFrame.Angles(0, 0, math.rad(math.sin(tick() * 2) * State.LYRFisheyeDegree))
-            baseCFrame = baseCFrame * fisheyeOffset
         end
 
         if State.RealGepengEnabled then
@@ -1824,7 +1821,7 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
     if not State.ScriptActive then return end
     pcall(function()
         local char = LocalPlayer.Character
-        if char then
+        if char me then
             local hum = char:FindFirstChildOfClass("Humanoid")
             local hrp = char:FindFirstChild("HumanoidRootPart")
 
