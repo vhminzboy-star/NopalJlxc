@@ -1,7 +1,7 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (STABILIZED & FIXED EDITION)
--- Showcase Logo: https://create.roblox.com/store/asset/111989994218720
--- Background Logo: https://create.roblox.com/store/asset/111989994218720
+-- NOPAL JLXC — CPB JELYZX (FIXED EDITION: GEPENG & ASSET ID)
+-- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
+-- Background Logo: https://create.roblox.com/store/asset/129775661697970
 -- ========================================================
 
 if _G.JelyzxConnections then
@@ -68,9 +68,9 @@ for _, old in ipairs(parentGui:GetChildren()) do
     end
 end
 
--- ASSETS ID
-local RAW_ID = "111989994218720"
-local SHOWCASE_ID = "111989994218720"
+-- ASSETS ID UPDATED (ID BARU: 129775661697970)
+local RAW_ID = "129775661697970"
+local SHOWCASE_ID = "129775661697970"
 local CUSTOM_LOGO_ID = "rbxthumb://type=Asset&id=" .. RAW_ID .. "&w=420&h=420"
 local SHOWCASE_LOGO_ID = "rbxthumb://type=Asset&id=" .. SHOWCASE_ID .. "&w=420&h=420"
 
@@ -106,36 +106,37 @@ local ColorMap = {
     ["Biru Tua"]   = Color3.fromRGB(30, 144, 255)
 }
 
+-- STATE FITUR (ALL FALSE DEFAULT)
 local State = {
-    -- COMBAT & AIMBOT (DEFAULT ENABLED)
-    AimjlxcEnabled = true,
+    -- COMBAT & AIMBOT
+    AimjlxcEnabled = false,
     Smoothness = 0.15, 
-    DirectLock = true,
+    DirectLock = false,
     TargetPart = "Head",
-    WallCheck = true,
+    WallCheck = false,
     AimPOVRadius = 150,
-    ShowAimPOV = true,
+    ShowAimPOV = false,
     AimPOVColor = Color3.fromRGB(0, 240, 255),
     Prediction = false, 
     PredictionMult = 0.013,
     LockColor = Color3.fromRGB(255, 30, 30),
     
     SpawnFullHealth = false,
-    AntiSpectateAdmin = true,
+    AntiSpectateAdmin = false,
 
     CustomCrosshair = false,
     CrosshairType = "Silang (+)",
     CrosshairColorName = "Hijau Neon",
     CrosshairColor = Color3.fromRGB(0, 255, 150),
 
-    -- ESP SYSTEM (DEFAULT ENABLED)
-    ESP_CornerBox = true,
-    ESP_HealthBar = true,
-    ESP_Skeleton = true,
-    ESP_Tracers = true,
+    -- ESP SYSTEM
+    ESP_CornerBox = false,
+    ESP_HealthBar = false,
+    ESP_Skeleton = false,
+    ESP_Tracers = false,
     ESP_TracerPos = "Bawah Tengah",
-    ESP_HeadDots = true,
-    ESP_Names = true,
+    ESP_HeadDots = false,
+    ESP_Names = false,
     ESP_TeamCheck = false,
     ESP_MaxDistance = 999999,
     ESPColor = Color3.fromRGB(0, 240, 255),
@@ -144,7 +145,7 @@ local State = {
     HitboxExpander = false,
     HitboxSize = 15,
 
-    -- VISUAL / DISPLAY (SEKARANG DEFAULT FALSE UNTUK AKTIF MANUAL)
+    -- VISUAL / DISPLAY
     LYR360Enabled = false,
     LYR360Val = 120,
 
@@ -189,7 +190,7 @@ local State = {
 local ColorGold = Color3.fromRGB(255, 215, 0)
 local ColorGodmode = Color3.fromRGB(255, 0, 128)
 
--- Helper WorldToViewport yang mensupport Kompensasi Layar Gepeng Presisi
+-- WorldToViewport dengan penyesuaian Gepeng presisi
 local function worldToAdjustedViewportPoint(pos)
     local screenPos, onScreen = Camera:WorldToViewportPoint(pos)
     if State.RealGepengEnabled then
@@ -737,8 +738,8 @@ introBg.BorderSizePixel = 0
 introBg.Parent = gui
 
 local introCard = Instance.new("Frame")
-introCard.Size = UDim2.new(0, 380, 0, 200)
-introCard.Position = UDim2.new(0.5, 0, 0.5, 20)
+introCard.Size = UDim2.new(0, 380, 0, 220)
+introCard.Position = UDim2.new(0.5, 0, 0.5, 0)
 introCard.AnchorPoint = Vector2.new(0.5, 0.5)
 introCard.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
 introCard.BackgroundTransparency = 0.15
@@ -761,6 +762,7 @@ bgLogoOld.ImageTransparency = 0.20
 bgLogoOld.ScaleType = Enum.ScaleType.Fit
 bgLogoOld.Parent = introCard
 
+-- LOGO SHOWCASE INTRO (POSISI DIPERBAIKI BIAR TIDAK MENIMPA TEKS)
 local showcaseLogo = Instance.new("ImageLabel")
 showcaseLogo.Size = UDim2.new(0, 110, 0, 110)
 showcaseLogo.Position = UDim2.new(0.5, 0, 0, -180)
@@ -773,7 +775,7 @@ showcaseLogo.Parent = introCard
 
 local entranceTween = TweenService:Create(showcaseLogo, TweenInfo.new(1.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
     Size = UDim2.new(0, 72, 0, 72),
-    Position = UDim2.new(0.5, 0, 0, -38),
+    Position = UDim2.new(0.5, 0, 0, 42),
     ImageTransparency = 0,
     Rotation = 0
 })
@@ -784,7 +786,7 @@ task.spawn(function()
     while showcaseLogo and showcaseLogo.Parent do
         local t1 = TweenService:Create(showcaseLogo, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
             Size = UDim2.new(0, 68, 0, 68),
-            Position = UDim2.new(0.5, 0, 0, -36),
+            Position = UDim2.new(0.5, 0, 0, 44),
             ImageTransparency = 0.45
         })
         t1:Play()
@@ -792,7 +794,7 @@ task.spawn(function()
 
         local t2 = TweenService:Create(showcaseLogo, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
             Size = UDim2.new(0, 76, 0, 76),
-            Position = UDim2.new(0.5, 0, 0, -40),
+            Position = UDim2.new(0.5, 0, 0, 40),
             ImageTransparency = 0
         })
         t2:Play()
@@ -802,7 +804,7 @@ end)
 
 local introTitle = Instance.new("TextLabel")
 introTitle.Size = UDim2.new(1, 0, 0, 26)
-introTitle.Position = UDim2.new(0, 0, 0, 50)
+introTitle.Position = UDim2.new(0, 0, 0, 95)
 introTitle.BackgroundTransparency = 1
 introTitle.Font = Enum.Font.GothamBlack
 introTitle.Text = "<font color=\"#FFFFFF\">NOPAL</font> <font color=\"#FF2D41\">JLXC</font> <font color=\"#00F0FF\">SYSTEM</font>"
@@ -813,7 +815,7 @@ introTitle.Parent = introCard
 
 local statusText = Instance.new("TextLabel")
 statusText.Size = UDim2.new(1, 0, 0, 16)
-statusText.Position = UDim2.new(0, 0, 0, 82)
+statusText.Position = UDim2.new(0, 0, 0, 128)
 statusText.BackgroundTransparency = 1
 statusText.Font = Enum.Font.GothamBold
 statusText.Text = "INITIALIZING ENGINE CORE..."
@@ -823,7 +825,7 @@ statusText.Parent = introCard
 
 local barContainer = Instance.new("Frame")
 barContainer.Size = UDim2.new(0, 300, 0, 12)
-barContainer.Position = UDim2.new(0.5, -150, 0, 110)
+barContainer.Position = UDim2.new(0.5, -150, 0, 155)
 barContainer.BackgroundColor3 = Color3.fromRGB(15, 18, 28)
 barContainer.BorderSizePixel = 0
 barContainer.Parent = introCard
@@ -851,7 +853,7 @@ barGradient.Color = ColorSequence.new({
 
 local percentText = Instance.new("TextLabel")
 percentText.Size = UDim2.new(1, 0, 0, 16)
-percentText.Position = UDim2.new(0, 0, 0, 130)
+percentText.Position = UDim2.new(0, 0, 0, 175)
 percentText.BackgroundTransparency = 1
 percentText.Font = Enum.Font.GothamBlack
 percentText.Text = "0%"
@@ -917,27 +919,10 @@ topBar.Size = UDim2.new(1, 0, 0, 38)
 topBar.BackgroundTransparency = 1
 topBar.Parent = main
 
-local logoHolder = Instance.new("Frame")
-logoHolder.Size = UDim2.new(0, 32, 0, 32)
-logoHolder.Position = UDim2.new(0, 8, 0.5, -16)
-logoHolder.BackgroundColor3 = Color3.fromRGB(22, 26, 38)
-logoHolder.BorderSizePixel = 0
-logoHolder.Parent = topBar
-Instance.new("UICorner", logoHolder).CornerRadius = UDim.new(0, 6)
-
-local logoIcon = Instance.new("ImageLabel")
-logoIcon.Size = UDim2.new(1, -4, 1, -4)
-logoIcon.Position = UDim2.new(0, 2, 0, 2)
-logoIcon.BackgroundTransparency = 1
-logoIcon.Image = SHOWCASE_LOGO_ID
-logoIcon.ImageTransparency = 0
-logoIcon.Parent = logoHolder
-Instance.new("UICorner", logoIcon).CornerRadius = UDim.new(0, 4)
-
--- TITLE HEADER
+-- TITLE HEADER (FOTO ICON KE 1 DIHAPUS, HEADER DIPINDAHKAN KE KIRI REPOSISI AKURAT)
 local titleLbl = Instance.new("TextLabel")
 titleLbl.Size = UDim2.new(0, 300, 1, 0)
-titleLbl.Position = UDim2.new(0, 46, 0, 0)
+titleLbl.Position = UDim2.new(0, 14, 0, 0)
 titleLbl.BackgroundTransparency = 1
 titleLbl.Font = Enum.Font.GothamBlack
 titleLbl.Text = "NOPAL <font color=\"#FF2D41\">JLXC</font> <font color=\"#808080\">|</font> <font color=\"#808080\">BETA CPB JELYZX</font>"
@@ -1260,12 +1245,9 @@ addToggle(combatTab, "Hitbox Expander", State.HitboxExpander, function(v) State.
 addSlider(combatTab, "Hitbox Size", 0, 100, State.HitboxSize, function(v) State.HitboxSize = v end)
 addToggle(combatTab, "Spawn Instant Full Health", State.SpawnFullHealth, function(v) State.SpawnFullHealth = v end)
 
--- VISUAL & DISPLAY TAB (DEFAULT DIBUAT OFF KEDUANYA)
+-- VISUAL & DISPLAY TAB
 addToggle(visualTab, "Layar Gepeng (Stretch Res)", State.RealGepengEnabled, function(v)
     State.RealGepengEnabled = v
-    if not v then
-        Camera.FieldOfView = State.LYR360Enabled and State.LYR360Val or 70
-    end
 end)
 addSlider(visualTab, "Kebangatan Gepeng", 10, 100, math.floor(State.GepengRatio * 100), function(v)
     State.GepengRatio = v / 100
@@ -1708,10 +1690,6 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
 
                 local camPos = Camera.CFrame.Position
                 local unscaledCamCFrame = Camera.CFrame
-                if State.RealGepengEnabled then
-                    unscaledCamCFrame = unscaledCamCFrame * CFrame.new(0,0,0, 1,0,0, 0,1/State.GepengRatio,0, 0,0,1)
-                end
-                
                 local targetCFrame = CFrame.lookAt(camPos, targetPos)
 
                 if State.DirectLock then
@@ -1727,15 +1705,17 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         else
             CurrentActiveTarget = nil
         end
-
-        if State.LYR360Enabled then
-            Camera.FieldOfView = State.LYR360Val
-        end
     end
 
-    -- PENYESUAIAN RESOLUSI LAYAR GEPENG STABIL
-    if State.RealGepengEnabled then
-        baseCFrame = baseCFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, State.GepengRatio, 0, 0, 0, 1)
+    -- PENYESUAIAN FOV DAN STRETCH RESOLUTION LENS PRESISI
+    if State.LYR360Enabled then
+        local targetFOV = State.LYR360Val
+        if State.RealGepengEnabled then
+            targetFOV = math.clamp(targetFOV / State.GepengRatio, 1, 175)
+        end
+        Camera.FieldOfView = targetFOV
+    elseif State.RealGepengEnabled then
+        Camera.FieldOfView = math.clamp(70 / State.GepengRatio, 1, 175)
     end
 
     if not State.SpectateEnabled then
