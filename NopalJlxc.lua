@@ -1261,9 +1261,12 @@ addToggle(combatTab, "Hitbox Expander", State.HitboxExpander, function(v) State.
 addSlider(combatTab, "Hitbox Size", 0, 100, State.HitboxSize, function(v) State.HitboxSize = v end)
 addToggle(combatTab, "Spawn Instant Full Health", State.SpawnFullHealth, function(v) State.SpawnFullHealth = v end)
 
--- VISUAL & DISPLAY TAB (FIXED LAYAR GEPENG PERMANEN)
+-- VISUAL & DISPLAY TAB (FIXED LAYAR GEPENG PERMANEN & STABIL)
 addToggle(visualTab, "Layar Gepeng (Stretch Res)", State.RealGepengEnabled, function(v)
     State.RealGepengEnabled = v
+    if not v and not State.LYR360Enabled then
+        Camera.FieldOfView = 70
+    end
 end)
 addSlider(visualTab, "Kebangatan Gepeng", 10, 90, math.floor(State.GepengRatio * 100), function(v)
     State.GepengRatio = v / 100
@@ -1271,7 +1274,7 @@ end)
 
 addToggle(visualTab, "Wide FOV Lens", State.LYR360Enabled, function(v)
     State.LYR360Enabled = v
-    if not v then Camera.FieldOfView = 70 end
+    if not v and not State.RealGepengEnabled then Camera.FieldOfView = 70 end
 end)
 addSlider(visualTab, "Atur FOV Kamera", 70, 120, State.LYR360Val, function(v) State.LYR360Val = v end)
 
@@ -1668,7 +1671,7 @@ local function updateESPPosition()
     end
 end
 
--- RENDER LOOP (LAYAR GEPENG PERMANEN & STABIL)
+-- RENDER LOOP (STRETCHED RESOLUTION STABIL)
 local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     if not State.ScriptActive then return end
 
@@ -1721,19 +1724,18 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         end
     end
 
-    -- KONTROL FOV
+    -- KONTROL FOV & LAYAR GEPENG PRESISE
+    local targetFOV = 70
     if State.LYR360Enabled then
-        Camera.FieldOfView = math.clamp(State.LYR360Val, 30, 120)
+        targetFOV = math.clamp(State.LYR360Val, 30, 120)
     end
-
-    -- METODE LAYAR GEPENG REAL (TIDAK AKAN BALIK LAGI KE NORMAL SECARA OTOMATIS)
+    
     if State.RealGepengEnabled then
-        local mult = math.clamp(1 / math.max(State.GepengRatio, 0.1), 1, 5)
-        baseCFrame = baseCFrame * CFrame.Angles(0, 0, 0) * CFrame.Matrix4 or baseCFrame
-        -- Modifikasi orientasi skala internal kamera secara langsung di CFrame
-        baseCFrame = CFrame.new(baseCFrame.Position) 
-            * CFrame.fromMatrix(baseCFrame.Position, baseCFrame.RightVector, baseCFrame.UpVector * mult, baseCFrame.LookVector)
+        -- Menyesuaikan FOV secara proporsional dengan skala gepeng tanpa merusak aspek kontrol kamera
+        targetFOV = math.clamp(targetFOV / math.max(State.GepengRatio, 0.2), 30, 120)
     end
+    
+    Camera.FieldOfView = targetFOV
 
     if not State.SpectateEnabled then
         Camera.CFrame = baseCFrame
