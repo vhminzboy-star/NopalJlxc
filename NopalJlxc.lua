@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (FULL SCRIPT 100% INTEGRATED)
+-- NOPAL JLXC — CPB JELYZX (UPDATED GEPENG MATRIX EDITION)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -23,7 +23,6 @@ local function generateRandomName(length)
 end
 
 local SECURE_GUI_NAME = generateRandomName(18)
-local RENDER_BIND_NAME = generateRandomName(12)
 
 local Services = setmetatable({}, {
     __index = function(_, serviceName) 
@@ -151,7 +150,7 @@ local State = {
     LYR360Val = 90,
 
     RealGepengEnabled = false,
-    GepengRatio = 0.35,
+    GepengRatio = 0.35, -- Nilai kegepengan default (0.3 - 0.5)
 
     WalkSpeedVal = 16,
     JumpPowerVal = 50,
@@ -669,7 +668,7 @@ btnHideCard.MouseButton1Click:Connect(function()
     end
 end)
 
-table.insert(_G.JelyzxConnections, RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function()
     if State.SpectateEnabled and State.SpectateTargetPlayer then
         pcall(function()
             local targetPlr = State.SpectateTargetPlayer
@@ -703,7 +702,7 @@ table.insert(_G.JelyzxConnections, RunService.RenderStepped:Connect(function()
             end
         end)
     end
-end))
+end)
 
 -- MAIN PANEL
 local main = Instance.new("Frame")
@@ -1257,7 +1256,7 @@ addToggle(combatTab, "Hitbox Expander", State.HitboxExpander, function(v) State.
 addSlider(combatTab, "Hitbox Size", 0, 100, State.HitboxSize, function(v) State.HitboxSize = v end)
 addToggle(combatTab, "Spawn Instant Full Health", State.SpawnFullHealth, function(v) State.SpawnFullHealth = v end)
 
--- VISUAL & DISPLAY TAB
+-- VISUAL & DISPLAY TAB (INTEGRASI FITUR GEPENG BARU)
 addToggle(visualTab, "Layar Gepeng (Matrix CFrame)", State.RealGepengEnabled, function(v)
     State.RealGepengEnabled = v
 end)
@@ -1664,8 +1663,8 @@ local function updateESPPosition()
     end
 end
 
--- RENDER BIND - FIXED CAMERA OVERRIDE & STABILIZED MATRIX
-local function renderStepCore(deltaTime)
+-- RENDER LOOP (WITH NEW GEPENG MATRIX CFRAME DEFORMATION)
+local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     if not State.ScriptActive then return end
 
     processAntiSpectateProtection()
@@ -1717,15 +1716,12 @@ local function renderStepCore(deltaTime)
         end
     end
 
-    -- PENERAPAN MATRIX GEPENG STABIL DENGAN PRIORITY RENDER
+    -- PENERAPAN LOGIKA SCRIPT GEPENG MATRIX BARU
     if State.RealGepengEnabled then
-        local pos = baseCFrame.Position
-        local rot = baseCFrame - pos
-        local gepengMatrix = CFrame.new(0, 0, 0, 1, 0, 0, 0, math.clamp(State.GepengRatio, 0.05, 1), 0, 0, 0, 1)
-        baseCFrame = CFrame.new(pos) * (rot * gepengMatrix)
+        baseCFrame = baseCFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, State.GepengRatio, 0, 0, 0, 1)
     end
 
-    -- KONTROL FOV TANPA KEDUTAN
+    -- KONTROL FOV
     local targetFOV = State.LYR360Enabled and math.clamp(State.LYR360Val, 30, 120) or 70
     Camera.FieldOfView = targetFOV
 
@@ -1776,9 +1772,8 @@ local function renderStepCore(deltaTime)
     end
 
     updateESPPosition()
-end
-
-RunService:BindToRenderStep(RENDER_BIND_NAME, Enum.RenderPriority.Camera.Value + 1, renderStepCore)
+end)
+table.insert(_G.JelyzxConnections, mainRenderConn)
 
 -- INFINITE JUMP
 local function triggerJump()
@@ -1889,8 +1884,6 @@ end)
 closeBtn.MouseButton1Click:Connect(function()
     State.ScriptActive = false
     toggleFreecamMode(false)
-    pcall(function() RunService:UnbindFromRenderStep(RENDER_BIND_NAME) end)
-    
     if aimPovCircle then aimPovCircle.Visible = false end
     hideAllCrosshair()
     pcall(function() 
@@ -1908,30 +1901,3 @@ closeBtn.MouseButton1Click:Connect(function()
     for plr in pairs(ESPObjects) do removePlayerESP(plr) end
     gui:Destroy()
 end)
-
--- AUXILIARY RENDER EXTENSION (PARTS INTEGRATION)
-local auxiliaryRender = RunService.RenderStepped:Connect(function()
-    if not State.ScriptActive then return end
-
-    if State.HitboxExpander then
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LocalPlayer and plr.Character then
-                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    hrp.Size = Vector3.new(State.HitboxSize, State.HitboxSize, State.HitboxSize)
-                    hrp.Transparency = 0.7
-                    hrp.CanCollide = false
-                end
-            end
-        end
-    end
-end)
-table.insert(_G.JelyzxConnections, auxiliaryRender)
-
-local placeLeaveConn = LocalPlayer.Destroying:Connect(function()
-    State.ScriptActive = false
-    for _, conn in ipairs(_G.JelyzxConnections) do
-        pcall(function() conn:Disconnect() end)
-    end
-end)
-table.insert(_G.JelyzxConnections, placeLeaveConn)
