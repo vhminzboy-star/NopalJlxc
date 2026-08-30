@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (FIXED EDITION: LOGO & GEPENG FIX)
+-- NOPAL JLXC — CPB JELYZX (FIXED EDITION: REAL STRETCHED RES & ALL OPTION DEFAULT OFF)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -68,7 +68,7 @@ for _, old in ipairs(parentGui:GetChildren()) do
     end
 end
 
--- ASSETS ID UPDATED
+-- ASSETS ID
 local RAW_ID = "111989994218720"
 local SHOWCASE_ID = "129775661697970"
 local CUSTOM_LOGO_ID = "rbxthumb://type=Asset&id=" .. RAW_ID .. "&w=420&h=420"
@@ -106,22 +106,23 @@ local ColorMap = {
     ["Biru Tua"]   = Color3.fromRGB(30, 144, 255)
 }
 
+-- SELURUH FITUR DENGAN DEFAULT STATUS: FALSE / OFF
 local State = {
     -- COMBAT & AIMBOT
-    AimjlxcEnabled = true,
+    AimjlxcEnabled = false,
     Smoothness = 0.15, 
-    DirectLock = true,
+    DirectLock = false,
     TargetPart = "Head",
-    WallCheck = true,
+    WallCheck = false,
     AimPOVRadius = 150,
-    ShowAimPOV = true,
+    ShowAimPOV = false,
     AimPOVColor = Color3.fromRGB(0, 240, 255),
     Prediction = false, 
     PredictionMult = 0.013,
     LockColor = Color3.fromRGB(255, 30, 30),
     
     SpawnFullHealth = false,
-    AntiSpectateAdmin = true,
+    AntiSpectateAdmin = false,
 
     CustomCrosshair = false,
     CrosshairType = "Silang (+)",
@@ -129,13 +130,13 @@ local State = {
     CrosshairColor = Color3.fromRGB(0, 255, 150),
 
     -- ESP SYSTEM
-    ESP_CornerBox = true,
-    ESP_HealthBar = true,
-    ESP_Skeleton = true,
-    ESP_Tracers = true,
+    ESP_CornerBox = false,
+    ESP_HealthBar = false,
+    ESP_Skeleton = false,
+    ESP_Tracers = false,
     ESP_TracerPos = "Bawah Tengah",
-    ESP_HeadDots = true,
-    ESP_Names = true,
+    ESP_HeadDots = false,
+    ESP_Names = false,
     ESP_TeamCheck = false,
     ESP_MaxDistance = 999999,
     ESPColor = Color3.fromRGB(0, 240, 255),
@@ -929,7 +930,7 @@ local logoIcon = Instance.new("ImageLabel")
 logoIcon.Size = UDim2.new(1, -4, 1, -4)
 logoIcon.Position = UDim2.new(0, 2, 0, 2)
 logoIcon.BackgroundTransparency = 1
-logoIcon.Image = CUSTOM_LOGO_ID -- DIPERBAIKI: Menggunakan ID Image 111989994218720
+logoIcon.Image = CUSTOM_LOGO_ID
 logoIcon.ImageTransparency = 0
 logoIcon.Parent = logoHolder
 Instance.new("UICorner", logoIcon).CornerRadius = UDim.new(0, 4)
@@ -1260,12 +1261,9 @@ addToggle(combatTab, "Hitbox Expander", State.HitboxExpander, function(v) State.
 addSlider(combatTab, "Hitbox Size", 0, 100, State.HitboxSize, function(v) State.HitboxSize = v end)
 addToggle(combatTab, "Spawn Instant Full Health", State.SpawnFullHealth, function(v) State.SpawnFullHealth = v end)
 
--- VISUAL & DISPLAY TAB (DIPERBAIKI)
+-- VISUAL & DISPLAY TAB (FIXED LAYAR GEPENG PERMANEN)
 addToggle(visualTab, "Layar Gepeng (Stretch Res)", State.RealGepengEnabled, function(v)
     State.RealGepengEnabled = v
-    if not v and not State.LYR360Enabled then
-        Camera.FieldOfView = 70
-    end
 end)
 addSlider(visualTab, "Kebangatan Gepeng", 10, 90, math.floor(State.GepengRatio * 100), function(v)
     State.GepengRatio = v / 100
@@ -1273,9 +1271,7 @@ end)
 
 addToggle(visualTab, "Wide FOV Lens", State.LYR360Enabled, function(v)
     State.LYR360Enabled = v
-    if not v and not State.RealGepengEnabled then
-        Camera.FieldOfView = 70
-    end
+    if not v then Camera.FieldOfView = 70 end
 end)
 addSlider(visualTab, "Atur FOV Kamera", 70, 120, State.LYR360Val, function(v) State.LYR360Val = v end)
 
@@ -1672,7 +1668,7 @@ local function updateESPPosition()
     end
 end
 
--- RENDER LOOP (LOGIKA KAMERA & FOV DIPERBAIKI SECARA PRESISI)
+-- RENDER LOOP (LAYAR GEPENG PERMANEN & STABIL)
 local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     if not State.ScriptActive then return end
 
@@ -1725,16 +1721,18 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         end
     end
 
-    -- PENYESUAIAN FOV & LAYAR GEPENG (KONTROL EFESISEN TANPA ANOMALI FOV 360)
+    -- KONTROL FOV
     if State.LYR360Enabled then
         Camera.FieldOfView = math.clamp(State.LYR360Val, 30, 120)
-    else
-        Camera.FieldOfView = 70
     end
 
+    -- METODE LAYAR GEPENG REAL (TIDAK AKAN BALIK LAGI KE NORMAL SECARA OTOMATIS)
     if State.RealGepengEnabled then
-        local stretchFactor = math.clamp(1 / math.max(State.GepengRatio, 0.1), 1, 3)
-        baseCFrame = baseCFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, stretchFactor, 0, 0, 0, 1)
+        local mult = math.clamp(1 / math.max(State.GepengRatio, 0.1), 1, 5)
+        baseCFrame = baseCFrame * CFrame.Angles(0, 0, 0) * CFrame.Matrix4 or baseCFrame
+        -- Modifikasi orientasi skala internal kamera secara langsung di CFrame
+        baseCFrame = CFrame.new(baseCFrame.Position) 
+            * CFrame.fromMatrix(baseCFrame.Position, baseCFrame.RightVector, baseCFrame.UpVector * mult, baseCFrame.LookVector)
     end
 
     if not State.SpectateEnabled then
@@ -1819,14 +1817,18 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
             local hrp = char:FindFirstChild("HumanoidRootPart")
 
             if hum and hrp then
-                hum.WalkSpeed = State.WalkSpeedVal
-                if State.WalkSpeedVal > 16 and hum.MoveDirection.Magnitude > 0 then
-                    local targetVelocity = hum.MoveDirection * State.WalkSpeedVal
-                    hrp.AssemblyLinearVelocity = Vector3.new(targetVelocity.X, hrp.AssemblyLinearVelocity.Y, targetVelocity.Z)
+                if State.WalkSpeedVal > 16 then
+                    hum.WalkSpeed = State.WalkSpeedVal
+                    if hum.MoveDirection.Magnitude > 0 then
+                        local targetVelocity = hum.MoveDirection * State.WalkSpeedVal
+                        hrp.AssemblyLinearVelocity = Vector3.new(targetVelocity.X, hrp.AssemblyLinearVelocity.Y, targetVelocity.Z)
+                    end
                 end
 
-                hum.UseJumpPower = true
-                hum.JumpPower = State.JumpPowerVal
+                if State.JumpPowerVal > 50 then
+                    hum.UseJumpPower = true
+                    hum.JumpPower = State.JumpPowerVal
+                end
             end
 
             if State.SmoothMovement and hrp and hum then
