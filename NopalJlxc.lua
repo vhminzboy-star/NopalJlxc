@@ -1260,9 +1260,12 @@ addToggle(combatTab, "Hitbox Expander", State.HitboxExpander, function(v) State.
 addSlider(combatTab, "Hitbox Size", 0, 100, State.HitboxSize, function(v) State.HitboxSize = v end)
 addToggle(combatTab, "Spawn Instant Full Health", State.SpawnFullHealth, function(v) State.SpawnFullHealth = v end)
 
--- VISUAL & DISPLAY TAB (GEPENG MATRIX HARD-LOCK)
+-- VISUAL & DISPLAY TAB (FIXED GEPENG STABILITY LOGIC)
 addToggle(visualTab, "Layar Gepeng (Matrix CFrame)", State.RealGepengEnabled, function(v)
     State.RealGepengEnabled = v
+    if not v and not State.FreecamEnabled then
+        Camera.CameraType = Enum.CameraType.Custom
+    end
 end)
 addSlider(visualTab, "Kebangatan Gepeng (Ratio)", 10, 90, math.floor(State.GepengRatio * 100), function(v)
     State.GepengRatio = v / 100
@@ -1667,7 +1670,7 @@ local function updateESPPosition()
     end
 end
 
--- RENDER ENGINE CORE WITH POST-RENDER MATRIX HARD-LOCK & FOV LOCK
+-- RENDER ENGINE CORE (PERBAIKAN SYSTEM MATRIKS LAYAR GEPENG)
 local renderTaskName = "JelyzxPostRenderMatrix_" .. generateRandomName(6)
 
 RunService:BindToRenderStep(renderTaskName, Enum.RenderPriority.Camera.Value + 1, function(deltaTime)
@@ -1722,20 +1725,26 @@ RunService:BindToRenderStep(renderTaskName, Enum.RenderPriority.Camera.Value + 1
         end
     end
 
-    -- PENERAPAN LOGIKA HARD-LOCK LAYAR GEPENG (POST-RENDER MATRIX)
+    -- FIXED LOGIKA LAYAR GEPENG: MATRIX SCALING STABIL
     if State.RealGepengEnabled then
-        local rX, rY, rZ = baseCFrame:ToOrientation()
         local pos = baseCFrame.Position
-        baseCFrame = CFrame.new(pos) * CFrame.Angles(rX, rY, rZ) * CFrame.new(0, 0, 0, 1, 0, 0, 0, math.clamp(State.GepengRatio, 0.05, 1), 0, 0, 0, 1)
+        local rotX, rotY, rotZ = baseCFrame:ToOrientation()
+        
+        -- Mengunci transformasi matriks agar pergerakan halus & tidak berbayang
+        local gepengCFrame = CFrame.new(pos) 
+            * CFrame.Angles(rotX, rotY, rotZ) 
+            * CFrame.new(0, 0, 0, 1, 0, 0, 0, math.clamp(State.GepengRatio, 0.05, 1), 0, 0, 0, 1)
+            
+        Camera.CFrame = gepengCFrame
+    else
+        if not State.SpectateEnabled then
+            Camera.CFrame = baseCFrame
+        end
     end
 
-    -- KONTROL HARD-LOCK FOV (LOCK AGAR TIDAK MENTOK BERSAMA GEPENG)
+    -- FOV HARD LOCK Presisi
     if State.LYR360Enabled then
         Camera.FieldOfView = math.clamp(State.LYR360Val, 30, 140)
-    end
-
-    if not State.SpectateEnabled or State.RealGepengEnabled then
-        Camera.CFrame = baseCFrame
     end
 
     local viewportCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
