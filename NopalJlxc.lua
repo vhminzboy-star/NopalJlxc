@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (UPDATED GEPENG MATRIX EDITION)
+-- NOPAL JLXC — CPB JELYZX (UPDATED GEPENG MATRIX EDITION - FIXED)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -23,6 +23,7 @@ local function generateRandomName(length)
 end
 
 local SECURE_GUI_NAME = generateRandomName(18)
+local RENDER_BIND_NAME = generateRandomName(12)
 
 local Services = setmetatable({}, {
     __index = function(_, serviceName) 
@@ -150,7 +151,7 @@ local State = {
     LYR360Val = 90,
 
     RealGepengEnabled = false,
-    GepengRatio = 0.35, -- Nilai kegepengan default (0.3 - 0.5)
+    GepengRatio = 0.35,
 
     WalkSpeedVal = 16,
     JumpPowerVal = 50,
@@ -668,7 +669,7 @@ btnHideCard.MouseButton1Click:Connect(function()
     end
 end)
 
-RunService.RenderStepped:Connect(function()
+table.insert(_G.JelyzxConnections, RunService.RenderStepped:Connect(function()
     if State.SpectateEnabled and State.SpectateTargetPlayer then
         pcall(function()
             local targetPlr = State.SpectateTargetPlayer
@@ -702,7 +703,7 @@ RunService.RenderStepped:Connect(function()
             end
         end)
     end
-end)
+end))
 
 -- MAIN PANEL
 local main = Instance.new("Frame")
@@ -1256,7 +1257,7 @@ addToggle(combatTab, "Hitbox Expander", State.HitboxExpander, function(v) State.
 addSlider(combatTab, "Hitbox Size", 0, 100, State.HitboxSize, function(v) State.HitboxSize = v end)
 addToggle(combatTab, "Spawn Instant Full Health", State.SpawnFullHealth, function(v) State.SpawnFullHealth = v end)
 
--- VISUAL & DISPLAY TAB (INTEGRASI FITUR GEPENG BARU)
+-- VISUAL & DISPLAY TAB
 addToggle(visualTab, "Layar Gepeng (Matrix CFrame)", State.RealGepengEnabled, function(v)
     State.RealGepengEnabled = v
 end)
@@ -1652,7 +1653,7 @@ local function updateESPPosition()
                     if draw.Skel2 then draw.Skel2.Visible = false end
                     if draw.Skel3 then draw.Skel3.Visible = false end
                     if draw.Skel4 then draw.Skel4.Visible = false end
-                    if draw.Skel5 then draw.Skel5.Visible = false end
+                    if draw.Skel5 mechanically then draw.Skel5.Visible = false end
                 end
             else
                 resetAllDrawings(draw)
@@ -1663,8 +1664,8 @@ local function updateESPPosition()
     end
 end
 
--- RENDER LOOP (WITH STABILIZED GEPENG MATRIX EDITION)
-local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
+-- RENDER BIND - FIXED CAMERA OVERRIDE & STABILIZED MATRIX
+local function renderStepCore(deltaTime)
     if not State.ScriptActive then return end
 
     processAntiSpectateProtection()
@@ -1716,16 +1717,15 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         end
     end
 
-    -- PENERAPAN MATRIX GEPENG STABIL (STABILIZED MATRIX TRANSFORM)
+    -- PENERAPAN MATRIX GEPENG STABIL DENGAN PRIORITY RENDER
     if State.RealGepengEnabled then
         local pos = baseCFrame.Position
         local rot = baseCFrame - pos
-        local gepengMatrix = CFrame.new(0, 0, 0, 1, 0, 0, 0, State.GepengRatio, 0, 0, 0, 1)
-        
+        local gepengMatrix = CFrame.new(0, 0, 0, 1, 0, 0, 0, math.clamp(State.GepengRatio, 0.05, 1), 0, 0, 0, 1)
         baseCFrame = CFrame.new(pos) * (rot * gepengMatrix)
     end
 
-    -- KONTROL FOV
+    -- KONTROL FOV TANPA KEDUTAN
     local targetFOV = State.LYR360Enabled and math.clamp(State.LYR360Val, 30, 120) or 70
     Camera.FieldOfView = targetFOV
 
@@ -1776,8 +1776,9 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     end
 
     updateESPPosition()
-end)
-table.insert(_G.JelyzxConnections, mainRenderConn)
+end
+
+RunService:BindToRenderStep(RENDER_BIND_NAME, Enum.RenderPriority.Camera.Value + 1, renderStepCore)
 
 -- INFINITE JUMP
 local function triggerJump()
@@ -1888,6 +1889,8 @@ end)
 closeBtn.MouseButton1Click:Connect(function()
     State.ScriptActive = false
     toggleFreecamMode(false)
+    pcall(function() RunService:UnbindFromRenderStep(RENDER_BIND_NAME) end)
+    
     if aimPovCircle then aimPovCircle.Visible = false end
     hideAllCrosshair()
     pcall(function() 
