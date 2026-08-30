@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (FIXED EDITION: REAL STRETCHED RES & ALL OPTION DEFAULT OFF)
+-- NOPAL JLXC — CPB JELYZX (UPDATED GEPENG MATRIX EDITION)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -150,7 +150,7 @@ local State = {
     LYR360Val = 90,
 
     RealGepengEnabled = false,
-    GepengRatio = 0.5,
+    GepengRatio = 0.35, -- Nilai kegepengan default (0.3 - 0.5)
 
     WalkSpeedVal = 16,
     JumpPowerVal = 50,
@@ -190,13 +190,8 @@ local State = {
 local ColorGold = Color3.fromRGB(255, 215, 0)
 local ColorGodmode = Color3.fromRGB(255, 0, 128)
 
--- WorldToViewport dengan penyesuaian Gepeng presisi
 local function worldToAdjustedViewportPoint(pos)
     local screenPos, onScreen = Camera:WorldToViewportPoint(pos)
-    if State.RealGepengEnabled then
-        local centerY = Camera.ViewportSize.Y / 2
-        screenPos = Vector3.new(screenPos.X, centerY + (screenPos.Y - centerY) * State.GepengRatio, screenPos.Z)
-    end
     return screenPos, onScreen
 end
 
@@ -1261,20 +1256,17 @@ addToggle(combatTab, "Hitbox Expander", State.HitboxExpander, function(v) State.
 addSlider(combatTab, "Hitbox Size", 0, 100, State.HitboxSize, function(v) State.HitboxSize = v end)
 addToggle(combatTab, "Spawn Instant Full Health", State.SpawnFullHealth, function(v) State.SpawnFullHealth = v end)
 
--- VISUAL & DISPLAY TAB (FIXED LAYAR GEPENG PERMANEN & STABIL)
-addToggle(visualTab, "Layar Gepeng (Stretch Res)", State.RealGepengEnabled, function(v)
+-- VISUAL & DISPLAY TAB (INTEGRASI FITUR GEPENG BARU)
+addToggle(visualTab, "Layar Gepeng (Matrix CFrame)", State.RealGepengEnabled, function(v)
     State.RealGepengEnabled = v
-    if not v and not State.LYR360Enabled then
-        Camera.FieldOfView = 70
-    end
 end)
-addSlider(visualTab, "Kebangatan Gepeng", 10, 90, math.floor(State.GepengRatio * 100), function(v)
+addSlider(visualTab, "Kebangatan Gepeng (Ratio)", 10, 90, math.floor(State.GepengRatio * 100), function(v)
     State.GepengRatio = v / 100
 end)
 
 addToggle(visualTab, "Wide FOV Lens", State.LYR360Enabled, function(v)
     State.LYR360Enabled = v
-    if not v and not State.RealGepengEnabled then Camera.FieldOfView = 70 end
+    if not v then Camera.FieldOfView = 70 end
 end)
 addSlider(visualTab, "Atur FOV Kamera", 70, 120, State.LYR360Val, function(v) State.LYR360Val = v end)
 
@@ -1671,7 +1663,7 @@ local function updateESPPosition()
     end
 end
 
--- RENDER LOOP (STRETCHED RESOLUTION STABIL)
+-- RENDER LOOP (WITH NEW GEPENG MATRIX CFRAME DEFORMATION)
 local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     if not State.ScriptActive then return end
 
@@ -1724,17 +1716,13 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         end
     end
 
-    -- KONTROL FOV & LAYAR GEPENG PRESISE
-    local targetFOV = 70
-    if State.LYR360Enabled then
-        targetFOV = math.clamp(State.LYR360Val, 30, 120)
-    end
-    
+    -- PENERAPAN LOGIKA SCRIPT GEPENG MATRIX BARU
     if State.RealGepengEnabled then
-        -- Menyesuaikan FOV secara proporsional dengan skala gepeng tanpa merusak aspek kontrol kamera
-        targetFOV = math.clamp(targetFOV / math.max(State.GepengRatio, 0.2), 30, 120)
+        baseCFrame = baseCFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, State.GepengRatio, 0, 0, 0, 1)
     end
-    
+
+    -- KONTROL FOV
+    local targetFOV = State.LYR360Enabled and math.clamp(State.LYR360Val, 30, 120) or 70
     Camera.FieldOfView = targetFOV
 
     if not State.SpectateEnabled then
