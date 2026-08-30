@@ -1821,7 +1821,7 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
     if not State.ScriptActive then return end
     pcall(function()
         local char = LocalPlayer.Character
-        if char me then
+        if char then
             local hum = char:FindFirstChildOfClass("Humanoid")
             local hrp = char:FindFirstChild("HumanoidRootPart")
 
