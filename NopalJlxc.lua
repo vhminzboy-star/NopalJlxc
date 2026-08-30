@@ -1,7 +1,7 @@
 -- ========================================================
 -- NOPAL JLXC — CPB JELYZX (FIXED EDITION: GEPENG & ASSET ID)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
--- Background Logo: https://create.roblox.com/store/asset/129775661697970
+-- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
 
 if _G.JelyzxConnections then
@@ -68,8 +68,8 @@ for _, old in ipairs(parentGui:GetChildren()) do
     end
 end
 
--- ASSETS ID UPDATED (ID BARU: 129775661697970)
-local RAW_ID = "129775661697970"
+-- ASSETS ID UPDATED (BACKGROUND: 111989994218720, SHOWCASE: 129775661697970)
+local RAW_ID = "111989994218720"
 local SHOWCASE_ID = "129775661697970"
 local CUSTOM_LOGO_ID = "rbxthumb://type=Asset&id=" .. RAW_ID .. "&w=420&h=420"
 local SHOWCASE_LOGO_ID = "rbxthumb://type=Asset&id=" .. SHOWCASE_ID .. "&w=420&h=420"
@@ -929,7 +929,7 @@ local logoIcon = Instance.new("ImageLabel")
 logoIcon.Size = UDim2.new(1, -4, 1, -4)
 logoIcon.Position = UDim2.new(0, 2, 0, 2)
 logoIcon.BackgroundTransparency = 1
-logoIcon.Image = SHOWCASE_LOGO_ID -- UPDATED USE ID 129775661697970
+logoIcon.Image = SHOWCASE_LOGO_ID
 logoIcon.ImageTransparency = 0
 logoIcon.Parent = logoHolder
 Instance.new("UICorner", logoIcon).CornerRadius = UDim.new(0, 4)
