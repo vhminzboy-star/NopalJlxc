@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (UPDATED GEPENG MATRIX EDITION)
+-- NOPAL JLXC — CPB JELYZX (FIXED MATRIX & FOV SUPPORT EDITION)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -43,6 +43,10 @@ local SoundService = Services.SoundService
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
+
+Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+    Camera = Workspace.CurrentCamera
+end)
 
 -- GUI Parent Safe Retrieval
 local function getGuiParent()
@@ -150,7 +154,7 @@ local State = {
     LYR360Val = 90,
 
     RealGepengEnabled = false,
-    GepengRatio = 0.35, -- Nilai kegepengan default (0.3 - 0.5)
+    GepengRatio = 0.35,
 
     WalkSpeedVal = 16,
     JumpPowerVal = 50,
@@ -1256,7 +1260,7 @@ addToggle(combatTab, "Hitbox Expander", State.HitboxExpander, function(v) State.
 addSlider(combatTab, "Hitbox Size", 0, 100, State.HitboxSize, function(v) State.HitboxSize = v end)
 addToggle(combatTab, "Spawn Instant Full Health", State.SpawnFullHealth, function(v) State.SpawnFullHealth = v end)
 
--- VISUAL & DISPLAY TAB (INTEGRASI FITUR GEPENG BARU)
+-- VISUAL & DISPLAY TAB (GEPENG MATRIX HARD-LOCK)
 addToggle(visualTab, "Layar Gepeng (Matrix CFrame)", State.RealGepengEnabled, function(v)
     State.RealGepengEnabled = v
 end)
@@ -1264,11 +1268,11 @@ addSlider(visualTab, "Kebangatan Gepeng (Ratio)", 10, 90, math.floor(State.Gepen
     State.GepengRatio = v / 100
 end)
 
-addToggle(visualTab, "Wide FOV Lens", State.LYR360Enabled, function(v)
+addToggle(visualTab, "Wide FOV Lens (360°)", State.LYR360Enabled, function(v)
     State.LYR360Enabled = v
     if not v then Camera.FieldOfView = 70 end
 end)
-addSlider(visualTab, "Atur FOV Kamera", 70, 120, State.LYR360Val, function(v) State.LYR360Val = v end)
+addSlider(visualTab, "Atur FOV Kamera", 70, 140, State.LYR360Val, function(v) State.LYR360Val = v end)
 
 -- ESP TAB
 addToggle(espTab, "Precision Box ESP", State.ESP_CornerBox, function(v) State.ESP_CornerBox = v end)
@@ -1313,7 +1317,7 @@ end)
 sliderSens = addSlider(moveTab, "Kecepatan Geser Layar", 1, 50, math.floor(State.FreecamSens * 10), function(v) 
     State.FreecamSens = v / 10 
 end)
-sliderFly = addSlider(moveTab, "Freecam Fly Speed", 1, 20, State.FreecamSpeed, function(v) State.FreecamSpeed = v end)
+sliderFly = addSlider(moveTab, "Freecam Fly Speed", 1, 20, State.FreecamSpeed, function(v) State.FlySpeed = v end)
 sliderScale = addSlider(moveTab, "Ukuran Scale UI Freecam", 50, 150, math.floor(State.FreecamUIScale * 100), function(v)
     State.FreecamUIScale = v / 100
     fcScaleConstraint.Scale = State.FreecamUIScale
@@ -1663,8 +1667,10 @@ local function updateESPPosition()
     end
 end
 
--- RENDER LOOP (WITH NEW GEPENG MATRIX CFRAME DEFORMATION)
-local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
+-- RENDER ENGINE CORE WITH POST-RENDER MATRIX HARD-LOCK & FOV LOCK
+local renderTaskName = "JelyzxPostRenderMatrix_" .. generateRandomName(6)
+
+RunService:BindToRenderStep(renderTaskName, Enum.RenderPriority.Camera.Value + 1, function(deltaTime)
     if not State.ScriptActive then return end
 
     processAntiSpectateProtection()
@@ -1716,16 +1722,19 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         end
     end
 
-    -- PENERAPAN LOGIKA SCRIPT GEPENG MATRIX BARU
+    -- PENERAPAN LOGIKA HARD-LOCK LAYAR GEPENG (POST-RENDER MATRIX)
     if State.RealGepengEnabled then
-        baseCFrame = baseCFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, State.GepengRatio, 0, 0, 0, 1)
+        local rX, rY, rZ = baseCFrame:ToOrientation()
+        local pos = baseCFrame.Position
+        baseCFrame = CFrame.new(pos) * CFrame.Angles(rX, rY, rZ) * CFrame.new(0, 0, 0, 1, 0, 0, 0, math.clamp(State.GepengRatio, 0.05, 1), 0, 0, 0, 1)
     end
 
-    -- KONTROL FOV
-    local targetFOV = State.LYR360Enabled and math.clamp(State.LYR360Val, 30, 120) or 70
-    Camera.FieldOfView = targetFOV
+    -- KONTROL HARD-LOCK FOV (LOCK AGAR TIDAK MENTOK BERSAMA GEPENG)
+    if State.LYR360Enabled then
+        Camera.FieldOfView = math.clamp(State.LYR360Val, 30, 140)
+    end
 
-    if not State.SpectateEnabled then
+    if not State.SpectateEnabled or State.RealGepengEnabled then
         Camera.CFrame = baseCFrame
     end
 
@@ -1773,7 +1782,12 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
 
     updateESPPosition()
 end)
-table.insert(_G.JelyzxConnections, mainRenderConn)
+
+table.insert(_G.JelyzxConnections, {
+    Disconnect = function()
+        pcall(function() RunService:UnbindFromRenderStep(renderTaskName) end)
+    end
+})
 
 -- INFINITE JUMP
 local function triggerJump()
@@ -1884,6 +1898,7 @@ end)
 closeBtn.MouseButton1Click:Connect(function()
     State.ScriptActive = false
     toggleFreecamMode(false)
+    pcall(function() RunService:UnbindFromRenderStep(renderTaskName) end)
     if aimPovCircle then aimPovCircle.Visible = false end
     hideAllCrosshair()
     pcall(function() 
