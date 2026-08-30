@@ -110,7 +110,7 @@ local ColorMap = {
     ["Biru Tua"]   = Color3.fromRGB(30, 144, 255)
 }
 
--- SELURUH FITUR DENGAN DEFAULT STATUS: FALSE / OFF
+-- STATE FITUR (DEFAULT: FALSE / OFF)
 local State = {
     -- COMBAT & AIMBOT
     AimjlxcEnabled = false,
@@ -1260,7 +1260,7 @@ addToggle(combatTab, "Hitbox Expander", State.HitboxExpander, function(v) State.
 addSlider(combatTab, "Hitbox Size", 0, 100, State.HitboxSize, function(v) State.HitboxSize = v end)
 addToggle(combatTab, "Spawn Instant Full Health", State.SpawnFullHealth, function(v) State.SpawnFullHealth = v end)
 
--- VISUAL & DISPLAY TAB (FIXED GEPENG STABILITY LOGIC)
+-- VISUAL & DISPLAY TAB
 addToggle(visualTab, "Layar Gepeng (Matrix CFrame)", State.RealGepengEnabled, function(v)
     State.RealGepengEnabled = v
     if not v and not State.FreecamEnabled then
@@ -1670,7 +1670,7 @@ local function updateESPPosition()
     end
 end
 
--- RENDER ENGINE CORE (PERBAIKAN SYSTEM MATRIKS LAYAR GEPENG)
+-- RENDER ENGINE CORE
 local renderTaskName = "JelyzxPostRenderMatrix_" .. generateRandomName(6)
 
 RunService:BindToRenderStep(renderTaskName, Enum.RenderPriority.Camera.Value + 1, function(deltaTime)
@@ -1725,12 +1725,11 @@ RunService:BindToRenderStep(renderTaskName, Enum.RenderPriority.Camera.Value + 1
         end
     end
 
-    -- FIXED LOGIKA LAYAR GEPENG: MATRIX SCALING STABIL
+    -- MATRIX SCALING STABIL (LAYAR GEPENG)
     if State.RealGepengEnabled then
         local pos = baseCFrame.Position
         local rotX, rotY, rotZ = baseCFrame:ToOrientation()
         
-        -- Mengunci transformasi matriks agar pergerakan halus & tidak berbayang
         local gepengCFrame = CFrame.new(pos) 
             * CFrame.Angles(rotX, rotY, rotZ) 
             * CFrame.new(0, 0, 0, 1, 0, 0, 0, math.clamp(State.GepengRatio, 0.05, 1), 0, 0, 0, 1)
