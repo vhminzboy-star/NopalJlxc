@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (UPDATED GEPENG MATRIX EDITION - FIXED)
+-- NOPAL JLXC — CPB JELYZX (FULL SCRIPT 100% INTEGRATED)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -1653,7 +1653,7 @@ local function updateESPPosition()
                     if draw.Skel2 then draw.Skel2.Visible = false end
                     if draw.Skel3 then draw.Skel3.Visible = false end
                     if draw.Skel4 then draw.Skel4.Visible = false end
-                    if draw.Skel5 mechanically then draw.Skel5.Visible = false end
+                    if draw.Skel5 then draw.Skel5.Visible = false end
                 end
             else
                 resetAllDrawings(draw)
@@ -1908,3 +1908,30 @@ closeBtn.MouseButton1Click:Connect(function()
     for plr in pairs(ESPObjects) do removePlayerESP(plr) end
     gui:Destroy()
 end)
+
+-- AUXILIARY RENDER EXTENSION (PARTS INTEGRATION)
+local auxiliaryRender = RunService.RenderStepped:Connect(function()
+    if not State.ScriptActive then return end
+
+    if State.HitboxExpander then
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character then
+                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.Size = Vector3.new(State.HitboxSize, State.HitboxSize, State.HitboxSize)
+                    hrp.Transparency = 0.7
+                    hrp.CanCollide = false
+                end
+            end
+        end
+    end
+end)
+table.insert(_G.JelyzxConnections, auxiliaryRender)
+
+local placeLeaveConn = LocalPlayer.Destroying:Connect(function()
+    State.ScriptActive = false
+    for _, conn in ipairs(_G.JelyzxConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+end)
+table.insert(_G.JelyzxConnections, placeLeaveConn)
