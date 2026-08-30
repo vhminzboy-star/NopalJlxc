@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — CPB JELYZX (FIXED EDITION: GEPENG & ASSET ID)
+-- NOPAL JLXC — CPB JELYZX (FIXED EDITION: LOGO & GEPENG FIX)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -68,7 +68,7 @@ for _, old in ipairs(parentGui:GetChildren()) do
     end
 end
 
--- ASSETS ID UPDATED (BACKGROUND: 111989994218720, SHOWCASE: 129775661697970)
+-- ASSETS ID UPDATED
 local RAW_ID = "111989994218720"
 local SHOWCASE_ID = "129775661697970"
 local CUSTOM_LOGO_ID = "rbxthumb://type=Asset&id=" .. RAW_ID .. "&w=420&h=420"
@@ -144,12 +144,12 @@ local State = {
     HitboxExpander = false,
     HitboxSize = 15,
 
-    -- VISUAL / DISPLAY (RE-ENGINEERED)
-    LYR360Enabled = true,
-    LYR360Val = 120,
+    -- VISUAL / DISPLAY
+    LYR360Enabled = false,
+    LYR360Val = 90,
 
-    RealGepengEnabled = true,
-    GepengRatio = 0.35,
+    RealGepengEnabled = false,
+    GepengRatio = 0.5,
 
     WalkSpeedVal = 16,
     JumpPowerVal = 50,
@@ -929,7 +929,7 @@ local logoIcon = Instance.new("ImageLabel")
 logoIcon.Size = UDim2.new(1, -4, 1, -4)
 logoIcon.Position = UDim2.new(0, 2, 0, 2)
 logoIcon.BackgroundTransparency = 1
-logoIcon.Image = SHOWCASE_LOGO_ID
+logoIcon.Image = CUSTOM_LOGO_ID -- DIPERBAIKI: Menggunakan ID Image 111989994218720
 logoIcon.ImageTransparency = 0
 logoIcon.Parent = logoHolder
 Instance.new("UICorner", logoIcon).CornerRadius = UDim.new(0, 4)
@@ -1260,17 +1260,20 @@ addToggle(combatTab, "Hitbox Expander", State.HitboxExpander, function(v) State.
 addSlider(combatTab, "Hitbox Size", 0, 100, State.HitboxSize, function(v) State.HitboxSize = v end)
 addToggle(combatTab, "Spawn Instant Full Health", State.SpawnFullHealth, function(v) State.SpawnFullHealth = v end)
 
--- VISUAL & DISPLAY TAB
+-- VISUAL & DISPLAY TAB (DIPERBAIKI)
 addToggle(visualTab, "Layar Gepeng (Stretch Res)", State.RealGepengEnabled, function(v)
     State.RealGepengEnabled = v
+    if not v and not State.LYR360Enabled then
+        Camera.FieldOfView = 70
+    end
 end)
-addSlider(visualTab, "Kebangatan Gepeng", 10, 100, math.floor(State.GepengRatio * 100), function(v)
+addSlider(visualTab, "Kebangatan Gepeng", 10, 90, math.floor(State.GepengRatio * 100), function(v)
     State.GepengRatio = v / 100
 end)
 
-addToggle(visualTab, "Wide FOV Lens (360)", State.LYR360Enabled, function(v)
+addToggle(visualTab, "Wide FOV Lens", State.LYR360Enabled, function(v)
     State.LYR360Enabled = v
-    if not v then
+    if not v and not State.RealGepengEnabled then
         Camera.FieldOfView = 70
     end
 end)
@@ -1669,7 +1672,7 @@ local function updateESPPosition()
     end
 end
 
--- RENDER LOOP (STABILIZED & RE-ENGINEERED FOR FOV & GEPENG)
+-- RENDER LOOP (LOGIKA KAMERA & FOV DIPERBAIKI SECARA PRESISI)
 local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
     if not State.ScriptActive then return end
 
@@ -1722,16 +1725,16 @@ local mainRenderConn = RunService.RenderStepped:Connect(function(deltaTime)
         end
     end
 
-    -- PENYESUAIAN FOV DAN STRETCH RESOLUTION LENS PRESISI
+    -- PENYESUAIAN FOV & LAYAR GEPENG (KONTROL EFESISEN TANPA ANOMALI FOV 360)
     if State.LYR360Enabled then
-        local targetFOV = State.LYR360Val
-        if State.RealGepengEnabled then
-            -- Penyesuaian FOV Efektif Vertikal saat Gepeng diaktifkan
-            targetFOV = math.clamp(targetFOV / State.GepengRatio, 1, 175)
-        end
-        Camera.FieldOfView = targetFOV
-    elseif State.RealGepengEnabled then
-        Camera.FieldOfView = math.clamp(70 / State.GepengRatio, 1, 175)
+        Camera.FieldOfView = math.clamp(State.LYR360Val, 30, 120)
+    else
+        Camera.FieldOfView = 70
+    end
+
+    if State.RealGepengEnabled then
+        local stretchFactor = math.clamp(1 / math.max(State.GepengRatio, 0.1), 1, 3)
+        baseCFrame = baseCFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, stretchFactor, 0, 0, 0, 1)
     end
 
     if not State.SpectateEnabled then
