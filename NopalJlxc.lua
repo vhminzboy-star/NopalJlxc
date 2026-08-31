@@ -1,5 +1,5 @@
 -- ========================================================
--- NOPAL JLXC — BETA CPB JELYZX (FULL FEATURE INTEGRATED)
+-- NOPAL JLXC — BETA CPB JELYZX (FULL FEATURE INTEGRATED + UPGRADED)
 -- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
 -- Background Logo: https://create.roblox.com/store/asset/111989994218720
 -- ========================================================
@@ -70,6 +70,7 @@ end
 local SOUND_UI_OPEN = "6112625298"
 local SOUND_TOGGLE_ON = "8486683243"
 local SOUND_TOGGLE_OFF = "131390520971848"
+local SOUND_HITMARKER = "8632670510"
 
 local ColorMap = {
     ["Biru Cyan"]  = Color3.fromRGB(0, 240, 255),
@@ -122,8 +123,15 @@ local State = {
     ESPColor = Color3.fromRGB(0, 240, 255),
     ESPRGB = false,
 
+    -- FITUR BARU: ESP UPGRADES
+    ESP_GradientBox = false,
+    ESP_FilledBox = false,
+
     HitboxExpander = false,
     HitboxSize = 15,
+
+    HitMarker = false,
+    HitSound = false,
 
     LYR360Enabled = false,
     LYR360Val = 135,
@@ -132,7 +140,7 @@ local State = {
     RealGepengEnabled = false,
     GepengRatio = 0.35,
 
-    WalkSpeedVal = 50, -- DIUBAH KEMBALI KE 50
+    WalkSpeedVal = 50,
     JumpPowerVal = 50,
     NoclipEnabled = false,
     InfiniteJump = false,
@@ -187,6 +195,116 @@ end
 
 local CurrentActiveTarget = nil
 
+-- GUI BASE
+local gui = Instance.new("ScreenGui")
+gui.Name = "JELYZX_V20_FULL_GUI"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = parentGui
+
+-- FLOATING NOTIFICATION SYSTEM
+local notificationHolder = Instance.new("Frame")
+notificationHolder.Name = "NotificationContainer"
+notificationHolder.Size = UDim2.new(0, 240, 1, -20)
+notificationHolder.Position = UDim2.new(1, -250, 0, 10)
+notificationHolder.BackgroundTransparency = 1
+notificationHolder.Parent = gui
+
+local notifLayout = Instance.new("UIListLayout")
+notifLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+notifLayout.SortOrder = Enum.SortOrder.LayoutOrder
+notifLayout.Padding = UDim.new(0, 8)
+notifLayout.Parent = notificationHolder
+
+local function showNotification(title, msg, duration)
+    duration = duration or 3
+    local card = Instance.new("Frame")
+    card.Size = UDim2.new(1, 0, 0, 50)
+    card.BackgroundColor3 = Color3.fromRGB(12, 15, 24)
+    card.BackgroundTransparency = 0.2
+    card.Position = UDim2.new(1.2, 0, 0, 0)
+    card.Parent = notificationHolder
+    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 8)
+
+    local stroke = Instance.new("UIStroke", card)
+    stroke.Color = Color3.fromRGB(0, 240, 255)
+    stroke.Thickness = 1.2
+
+    local titleLbl = Instance.new("TextLabel")
+    titleLbl.Size = UDim2.new(1, -16, 0, 18)
+    titleLbl.Position = UDim2.new(0, 8, 0, 4)
+    titleLbl.BackgroundTransparency = 1
+    titleLbl.Text = title
+    titleLbl.Font = Enum.Font.GothamBlack
+    titleLbl.TextColor3 = Color3.fromRGB(0, 240, 255)
+    titleLbl.TextSize = 10
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    titleLbl.Parent = card
+
+    local msgLbl = Instance.new("TextLabel")
+    msgLbl.Size = UDim2.new(1, -16, 0, 22)
+    msgLbl.Position = UDim2.new(0, 8, 0, 22)
+    msgLbl.BackgroundTransparency = 1
+    msgLbl.Text = msg
+    msgLbl.Font = Enum.Font.Gotham
+    msgLbl.TextColor3 = Color3.fromRGB(220, 225, 240)
+    msgLbl.TextSize = 8.5
+    msgLbl.TextXAlignment = Enum.TextXAlignment.Left
+    msgLbl.Parent = card
+
+    TweenService:Create(card, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0, 0, 0, 0)
+    }):Play()
+
+    task.spawn(function()
+        task.wait(duration)
+        local exit = TweenService:Create(card, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Position = UDim2.new(1.2, 0, 0, 0)
+        })
+        exit:Play()
+        exit.Completed:Wait()
+        card:Destroy()
+    end)
+end
+
+-- HIT MARKER DRAWING & SYSTEM
+local hitLines = {}
+for i = 1, 4 do
+    local l = Drawing.new("Line")
+    l.Thickness = 1.5
+    l.Color = Color3.fromRGB(255, 45, 65)
+    l.Visible = false
+    hitLines[i] = l
+end
+
+local function triggerHitMarker()
+    if State.HitSound then
+        playSound(SOUND_HITMARKER, 0.8)
+    end
+    if State.HitMarker then
+        local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        local gap = 4
+        local len = 8
+        
+        hitLines[1].From = Vector2.new(center.X - gap - len, center.Y - gap - len)
+        hitLines[1].To = Vector2.new(center.X - gap, center.Y - gap)
+        
+        hitLines[2].From = Vector2.new(center.X + gap, center.Y - gap)
+        hitLines[2].To = Vector2.new(center.X + gap + len, center.Y - gap - len)
+
+        hitLines[3].From = Vector2.new(center.X - gap - len, center.Y + gap + len)
+        hitLines[3].To = Vector2.new(center.X - gap, center.Y + gap)
+
+        hitLines[4].From = Vector2.new(center.X + gap, center.Y + gap)
+        hitLines[4].To = Vector2.new(center.X + gap + len, center.Y + gap + len)
+
+        for _, l in ipairs(hitLines) do l.Visible = true end
+        task.delay(0.15, function()
+            for _, l in ipairs(hitLines) do l.Visible = false end
+        end)
+    end
+end
+
 -- DRAWING CROSSHAIR & FOV
 local fovCircle = Drawing.new("Circle")
 fovCircle.Thickness = 1.5
@@ -213,13 +331,6 @@ local function hideAllCrosshair()
     for _, l in ipairs(chLines) do l.Visible = false end
     chCircle.Visible = false
 end
-
--- GUI BASE
-local gui = Instance.new("ScreenGui")
-gui.Name = "JELYZX_V20_FULL_GUI"
-gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.Parent = parentGui
 
 -- FLY TOUCH UI
 local flyControls = Instance.new("Frame")
@@ -611,6 +722,7 @@ task.spawn(function()
     TweenService:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, 420, 0, 260)
     }):Play()
+    showNotification("NOPAL JLXC", "Script Successfully Loaded!", 3)
 end)
 
 -- TOP BAR & NAVIGATION
@@ -686,6 +798,35 @@ contentArea.Position = UDim2.new(0, 127, 0, 42)
 contentArea.BackgroundTransparency = 1
 contentArea.Parent = main
 
+-- FITUR BARU: SEARCH BAR CONTAINER
+local searchBoxFrame = Instance.new("Frame")
+searchBoxFrame.Size = UDim2.new(1, 0, 0, 22)
+searchBoxFrame.Position = UDim2.new(0, 0, 0, 0)
+searchBoxFrame.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
+searchBoxFrame.BackgroundTransparency = 0.3
+searchBoxFrame.Parent = contentArea
+Instance.new("UICorner", searchBoxFrame).CornerRadius = UDim.new(0, 5)
+
+local searchIcon = Instance.new("TextLabel")
+searchIcon.Size = UDim2.new(0, 20, 1, 0)
+searchIcon.BackgroundTransparency = 1
+searchIcon.Text = "🔍"
+searchIcon.TextSize = 9
+searchIcon.Parent = searchBoxFrame
+
+local searchInput = Instance.new("TextBox")
+searchInput.Size = UDim2.new(1, -24, 1, 0)
+searchInput.Position = UDim2.new(0, 22, 0, 0)
+searchInput.BackgroundTransparency = 1
+searchInput.PlaceholderText = "Quick Search Tab / Feature..."
+searchInput.PlaceholderColor3 = Color3.fromRGB(120, 130, 155)
+searchInput.Text = ""
+searchInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+searchInput.Font = Enum.Font.GothamMedium
+searchInput.TextSize = 8.5
+searchInput.TextXAlignment = Enum.TextXAlignment.Left
+searchInput.Parent = searchBoxFrame
+
 local menuVisible = true
 local function toggleMenuUI()
     menuVisible = not menuVisible
@@ -716,6 +857,8 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 local tabs = {}
+local registeredElements = {}
+
 local function createTab(name)
     local tabBtn = Instance.new("TextButton")
     tabBtn.Size = UDim2.new(1, 0, 0, 24)
@@ -729,7 +872,8 @@ local function createTab(name)
     Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 5)
 
     local container = Instance.new("ScrollingFrame")
-    container.Size = UDim2.new(1, 0, 1, 0)
+    container.Size = UDim2.new(1, 0, 1, -26)
+    container.Position = UDim2.new(0, 0, 0, 26)
     container.BackgroundTransparency = 1
     container.ScrollBarThickness = 2
     container.ScrollBarImageColor3 = Color3.fromRGB(255, 45, 65)
@@ -754,7 +898,7 @@ local function createTab(name)
         container.Visible = true
     end)
 
-    table.insert(tabs, {Btn = tabBtn, Container = container})
+    table.insert(tabs, {Name = name, Btn = tabBtn, Container = container})
     if #tabs == 1 then
         tabBtn.BackgroundColor3 = Color3.fromRGB(255, 45, 65)
         tabBtn.BackgroundTransparency = 0
@@ -764,6 +908,22 @@ local function createTab(name)
     return container
 end
 
+-- QUICK SEARCH FILTER LOGIC
+searchInput:GetPropertyChangedSignal("Text"):Connect(function()
+    local query = searchInput.Text:lower()
+    for _, item in ipairs(registeredElements) do
+        if query == "" then
+            item.Frame.Visible = true
+        else
+            if item.Text:lower():find(query) then
+                item.Frame.Visible = true
+            else
+                item.Frame.Visible = false
+            end
+        end
+    end
+end)
+
 local function addToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -6, 0, 24)
@@ -771,6 +931,8 @@ local function addToggle(parent, text, default, callback)
     frame.BackgroundTransparency = 0.3
     frame.Parent = parent
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 5)
+
+    table.insert(registeredElements, {Text = text, Frame = frame})
 
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(0.7, 0, 1, 0)
@@ -805,6 +967,7 @@ local function addToggle(parent, text, default, callback)
 
         TweenService:Create(switch, TweenInfo.new(0.15), {BackgroundColor3 = state and Color3.fromRGB(255, 45, 65) or Color3.fromRGB(30, 36, 50)}):Play()
         TweenService:Create(dot, TweenInfo.new(0.15), {Position = state and UDim2.new(1, -12, 0.5, -5) or UDim2.new(0, 2, 0.5, -5)}):Play()
+        showNotification("Setting Updated", text .. ": " .. (state and "ENABLED" or "DISABLED"), 2)
         callback(state)
     end)
 end
@@ -817,6 +980,8 @@ local function addSlider(parent, text, min, max, default, callback)
     frame.BackgroundTransparency = 0.3
     frame.Parent = parent
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
+
+    table.insert(registeredElements, {Text = text, Frame = frame})
 
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(0.6, 0, 0, 12)
@@ -920,6 +1085,8 @@ local function addSelector(parent, text, options, defaultIndex, callback)
     frame.Parent = parent
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 5)
 
+    table.insert(registeredElements, {Text = text, Frame = frame})
+
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(0.45, 0, 1, 0)
     lbl.Position = UDim2.new(0, 8, 0, 0)
@@ -958,6 +1125,8 @@ local function addKeybind(parent, text, defaultKey, callback)
     frame.BackgroundTransparency = 0.3
     frame.Parent = parent
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 5)
+
+    table.insert(registeredElements, {Text = text, Frame = frame})
 
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(0.55, 0, 1, 0)
@@ -1007,6 +1176,8 @@ local function addColorPalette(parent, titleText, colorListOptions, onColorSelec
     frame.BackgroundTransparency = 0.3
     frame.Parent = parent
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 5)
+
+    table.insert(registeredElements, {Text = titleText, Frame = frame})
 
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(1, -12, 0, 16)
@@ -1113,6 +1284,9 @@ addSelector(combatTab, "Warna FOV Circle", colorList, 1, function(v)
     State.FOVColor = ColorMap[v] or Color3.fromRGB(0, 240, 255)
 end)
 
+addToggle(combatTab, "Hit Marker UI", false, function(v) State.HitMarker = v end)
+addToggle(combatTab, "Hit Sound Feedback", false, function(v) State.HitSound = v end)
+
 addToggle(combatTab, "Invisible Mode (Full Ghost)", false, function(v) 
     State.InvisibleMode = v 
     if not v and LocalPlayer.Character then
@@ -1143,6 +1317,8 @@ addToggle(combatTab, "Spawn Instant Full Health", false, function(v) State.Spawn
 
 -- ESP TAB
 addToggle(espTab, "Precision Box ESP", false, function(v) State.ESP_CornerBox = v end)
+addToggle(espTab, "Filled Animated Box ESP", false, function(v) State.ESP_FilledBox = v end)
+addToggle(espTab, "Gradient Style ESP", false, function(v) State.ESP_GradientBox = v end)
 addToggle(espTab, "Health Bar ESP", false, function(v) State.ESP_HealthBar = v end)
 addToggle(espTab, "Skeleton ESP", false, function(v) State.ESP_Skeleton = v end)
 addToggle(espTab, "Snapline Tracer", false, function(v) State.ESP_Tracers = v end)
@@ -1221,7 +1397,7 @@ end)
 addToggle(moveTab, "Spinbot Karakter (Muter)", false, function(v) State.SpinBotEnabled = v end)
 addSlider(moveTab, "Kecepatan Muter (Spin)", 10, 300, 50, function(v) State.SpinSpeed = v end)
 
--- CONFIG TAB (FITUR BARU)
+-- CONFIG TAB
 addKeybind(configTab, "Tecla do Menu (Menu Key)", Enum.KeyCode.Insert, function(key)
     State.MenuKey = key
 end)
@@ -1230,7 +1406,7 @@ addKeybind(configTab, "Tecla do Aimbot (Aimbot Key)", Enum.KeyCode.Insert, funct
     State.AimbotKey = key
 end)
 
--- PLAYER PROFILE CARD AUTO DETECT
+-- PLAYER PROFILE CARD
 local profileCard = Instance.new("Frame")
 profileCard.Size = UDim2.new(1, -6, 0, 54)
 profileCard.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
@@ -1344,9 +1520,9 @@ local globalKeyConn = UserInputService.InputBegan:Connect(function(input, g)
         if input.KeyCode == State.AimbotKey then
             State.AimbotHoldKey = true
             State.AimbotEnabled = true
-            State.DirectLock = true   -- AKTIFKAN INSTANT LOCK
-            State.WallCheck = true    -- AKTIFKAN WALL CHECK
-            State.FOVRadius = 50      -- SET FOV RADIUS KE 50
+            State.DirectLock = true
+            State.WallCheck = true
+            State.FOVRadius = 50
         end
     end
 end)
@@ -1571,6 +1747,9 @@ local function setupPlayerESP(plr)
         C7 = createDrawing("Line", {Thickness = 1.5, Visible = false}),
         C8 = createDrawing("Line", {Thickness = 1.5, Visible = false}),
 
+        -- FITUR BARU: FILLED ANIMATED BOX & GRADIENT ESP DRAWINGS
+        FilledBox = createDrawing("Square", {Thickness = 0, Filled = true, Transparency = 0.35, Visible = false}),
+
         HealthBarOutline = createDrawing("Square", {Thickness = 1, Filled = true, Color = Color3.fromRGB(0, 0, 0), Visible = false}),
         HealthBar = createDrawing("Square", {Thickness = 1, Filled = true, Visible = false}),
         HeadDot = createDrawing("Circle", {Radius = 3, Filled = true, Visible = false}),
@@ -1583,6 +1762,35 @@ local function setupPlayerESP(plr)
         Skel4 = createDrawing("Line", {Thickness = 1.2, Visible = false}),
         Skel5 = createDrawing("Line", {Thickness = 1.2, Visible = false})
     }
+    
+    -- DETEKSI DAMAGE UNTUK HITMARKER / SOUND FEEDBACK
+    if plr.Character then
+        local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            local lastHealth = hum.Health
+            local conn = hum.HealthChanged:Connect(function(newHealth)
+                if newHealth < lastHealth and CurrentActiveTarget and CurrentActiveTarget.Parent == plr.Character then
+                    triggerHitMarker()
+                end
+                lastHealth = newHealth
+            end)
+            table.insert(_G.JelyzxConnections, conn)
+        end
+    end
+    plr.CharacterAdded:Connect(function(char)
+        local hum = char:WaitForChild("Humanoid", 5)
+        if hum then
+            local lastHealth = hum.Health
+            local conn = hum.HealthChanged:Connect(function(newHealth)
+                if newHealth < lastHealth and CurrentActiveTarget and CurrentActiveTarget.Parent == char then
+                    triggerHitMarker()
+                end
+                lastHealth = newHealth
+            end)
+            table.insert(_G.JelyzxConnections, conn)
+        end
+    end)
+
     ESPObjects[plr] = {Player = plr, Drawing = draw}
 end
 
@@ -1635,6 +1843,25 @@ local function updateESPPosition()
                 local height = math.abs(headPos.Y - legPos.Y)
                 local width = height * 0.65
                 local minX, minY = hrpPos.X - (width / 2), headPos.Y
+
+                -- FITUR BARU: FILLED ANIMATED BOX & GRADIENT BOX ESP
+                if State.ESP_FilledBox or State.ESP_GradientBox then
+                    draw.FilledBox.Size = Vector2.new(width, height)
+                    draw.FilledBox.Position = Vector2.new(minX, minY)
+                    
+                    if State.ESP_GradientBox then
+                        local pulse = math.abs(math.sin(tick() * 3))
+                        draw.FilledBox.Color = activeColor:Lerp(Color3.fromRGB(0, 0, 0), pulse * 0.5)
+                        draw.FilledBox.Transparency = 0.2 + (pulse * 0.3)
+                    else
+                        local pulseAlpha = 0.25 + (math.sin(tick() * 4) * 0.1)
+                        draw.FilledBox.Color = activeColor
+                        draw.FilledBox.Transparency = pulseAlpha
+                    end
+                    draw.FilledBox.Visible = true
+                else
+                    draw.FilledBox.Visible = false
+                end
 
                 if State.ESP_CornerBox then
                     local lineLen = width * 0.25
@@ -1976,6 +2203,7 @@ closeBtn.MouseButton1Click:Connect(function()
     pcall(function() 
         fovCircle:Remove()
         for _, l in ipairs(chLines) do l:Remove() end
+        for _, l in ipairs(hitLines) do l:Remove() end
         chCircle:Remove()
     end)
     if flyBodyVelocity then flyBodyVelocity:Destroy() end
