@@ -802,17 +802,18 @@ local function addToggle(parent, text, default, callback)
     end)
 end
 
+-- UPGRADED SLIDER / SEEKBAR WITH WHITE KNOB & NEON GLOW ACCENT
 local function addSlider(parent, text, min, max, default, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -6, 0, 26)
+    frame.Size = UDim2.new(1, -6, 0, 30)
     frame.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
     frame.BackgroundTransparency = 0.3
     frame.Parent = parent
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 5)
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
 
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(0.6, 0, 0, 12)
-    lbl.Position = UDim2.new(0, 8, 0, 2)
+    lbl.Position = UDim2.new(0, 8, 0, 3)
     lbl.BackgroundTransparency = 1
     lbl.Text = text
     lbl.Font = Enum.Font.GothamMedium
@@ -823,7 +824,7 @@ local function addSlider(parent, text, min, max, default, callback)
 
     local valInput = Instance.new("TextLabel")
     valInput.Size = UDim2.new(0.35, -8, 0, 12)
-    valInput.Position = UDim2.new(0.65, 0, 0, 2)
+    valInput.Position = UDim2.new(0.65, 0, 0, 3)
     valInput.BackgroundTransparency = 1
     valInput.Text = tostring(default)
     valInput.Font = Enum.Font.GothamBold
@@ -832,22 +833,56 @@ local function addSlider(parent, text, min, max, default, callback)
     valInput.TextXAlignment = Enum.TextXAlignment.Right
     valInput.Parent = frame
 
+    -- Background Track / Jalur Slider
     local track = Instance.new("Frame")
-    track.Size = UDim2.new(1, -16, 0, 3)
-    track.Position = UDim2.new(0, 8, 0, 18)
-    track.BackgroundColor3 = Color3.fromRGB(30, 36, 50)
+    track.Size = UDim2.new(1, -20, 0, 4)
+    track.Position = UDim2.new(0, 10, 0, 20)
+    track.BackgroundColor3 = Color3.fromRGB(28, 34, 48)
+    track.BorderSizePixel = 0
     track.Parent = frame
+    Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
 
-    local fill = Instance.new("Frame")
+    -- Fill Track (Warna Merah Tema Utama)
     local pct = math.clamp((default - min) / (max - min), 0, 1)
+    local fill = Instance.new("Frame")
     fill.Size = UDim2.new(pct, 0, 1, 0)
     fill.BackgroundColor3 = Color3.fromRGB(255, 45, 65)
+    fill.BorderSizePixel = 0
     fill.Parent = track
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+
+    -- Glow Effect pada Fill
+    local fillGlow = Instance.new("ImageLabel")
+    fillGlow.Size = UDim2.new(1, 10, 1, 10)
+    fillGlow.Position = UDim2.new(0, -5, 0, -5)
+    fillGlow.BackgroundTransparency = 1
+    fillGlow.Image = "rbxassetid://5028857484"
+    fillGlow.ImageColor3 = Color3.fromRGB(255, 45, 65)
+    fillGlow.ImageTransparency = 0.6
+    fillGlow.Parent = fill
+
+    -- Knob / Thumb Bulat Putih
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 10, 0, 10)
+    knob.AnchorPoint = Vector2.new(0.5, 0.5)
+    knob.Position = UDim2.new(pct, 0, 0.5, 0)
+    knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    knob.BorderSizePixel = 0
+    knob.ZIndex = 2
+    knob.Parent = track
+    Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+    -- Outer Glow pada Bulatan Knob
+    local knobStroke = Instance.new("UIStroke", knob)
+    knobStroke.Color = Color3.fromRGB(255, 45, 65)
+    knobStroke.Thickness = 1.5
+    knobStroke.Transparency = 0.2
 
     local draggingBar = false
     local function update(inputX)
         local p = math.clamp((inputX - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
         fill.Size = UDim2.new(p, 0, 1, 0)
+        knob.Position = UDim2.new(p, 0, 0.5, 0)
         local v = math.floor(min + (max - min) * p)
         valInput.Text = tostring(v)
         callback(v)
@@ -855,14 +890,23 @@ local function addSlider(parent, text, min, max, default, callback)
 
     track.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            draggingBar = true; update(input.Position.X)
+            draggingBar = true
+            TweenService:Create(knob, TweenInfo.new(0.1), {Size = UDim2.new(0, 12, 0, 12)}):Play()
+            update(input.Position.X)
         end
     end)
+    
     UserInputService.InputChanged:Connect(function(input)
-        if draggingBar and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then update(input.Position.X) end
+        if draggingBar and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            update(input.Position.X)
+        end
     end)
+    
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then draggingBar = false end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            draggingBar = false
+            TweenService:Create(knob, TweenInfo.new(0.1), {Size = UDim2.new(0, 10, 0, 10)}):Play()
+        end
     end)
 end
 
@@ -904,7 +948,7 @@ local function addSelector(parent, text, options, defaultIndex, callback)
     end)
 end
 
--- COLOR PALETTE COMPONENT (BULATAN WARNA SAMA KAYAK GAMBAR BARU + RAINBOW TOGGLE)
+-- COLOR PALETTE COMPONENT
 local function addColorPalette(parent, titleText, colorListOptions, onColorSelect, onRainbowToggle)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -6, 0, 68)
@@ -1052,7 +1096,6 @@ addToggle(espTab, "Skeleton ESP", false, function(v) State.ESP_Skeleton = v end)
 addToggle(espTab, "Snapline Tracer", false, function(v) State.ESP_Tracers = v end)
 addSelector(espTab, "Posisi Line Tracer", {"Bawah Tengah", "Tengah Tengah", "Atas Tengah"}, 1, function(v) State.ESP_TracerPos = v end)
 
--- WARNA ESP DENGAN PALETTE BULATAN (MIRIP GAMBAR REFF)
 addColorPalette(espTab, "Cor do ESP / Warna ESP", espPaletteList, function(selectedColor)
     State.ESPColor = selectedColor
 end, function(isRainbow)
@@ -1101,7 +1144,7 @@ addToggle(moveTab, "Fly Mode UI (Hover Presisi)", false, function(v)
 end)
 addSlider(moveTab, "Fly Speed", 20, 500, 100, function(v) State.FlySpeed = v end)
 
--- INTEGRATED: FREECAM & ADVANCED SPECTATE TOITEM
+-- FREECAM & ADVANCED SPECTATE
 addToggle(moveTab, "Freecam Mode (Touch UI)", false, function(v)
     State.FreecamEnabled = v
     freecamControls.Visible = v
