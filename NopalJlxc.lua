@@ -22,6 +22,7 @@ local Workspace = Services.Workspace
 local VirtualUser = Services.VirtualUser
 local TweenService = Services.TweenService
 local SoundService = Services.SoundService
+local SetClipboard = setclipboard or toclipboard or function() end
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
@@ -47,8 +48,10 @@ if oldGui then oldGui:Destroy() end
 -- ASSETS ID
 local RAW_ID = "111989994218720"
 local SHOWCASE_ID = "129775661697970"
+local WA_ICON_ID = "129838440163232"
 local CUSTOM_LOGO_ID = "rbxthumb://type=Asset&id=" .. RAW_ID .. "&w=420&h=420"
 local SHOWCASE_LOGO_ID = "rbxthumb://type=Asset&id=" .. SHOWCASE_ID .. "&w=420&h=420"
+local WA_LOGO_ID = "rbxthumb://type=Asset&id=" .. WA_ICON_ID .. "&w=420&h=420"
 
 -- SOUND SYSTEM
 local function playSound(soundId, volume)
@@ -84,6 +87,10 @@ local ColorMap = {
 
 local State = {
     AimbotEnabled = false,
+    AimbotHoldKey = false,
+    MenuKey = Enum.KeyCode.Insert,
+    AimbotKey = Enum.KeyCode.Insert,
+    
     Smoothness = 0.15, 
     DirectLock = false,
     TargetPart = "Head",
@@ -125,7 +132,7 @@ local State = {
     RealGepengEnabled = false,
     GepengRatio = 0.35,
 
-    WalkSpeedVal = 16,
+    WalkSpeedVal = 50, -- DIUBAH KEMBALI KE 50
     JumpPowerVal = 50,
     NoclipEnabled = false,
     InfiniteJump = false,
@@ -134,14 +141,12 @@ local State = {
     FlyUp = false,
     FlyDown = false,
 
-    -- Freecam State
     FreecamEnabled = false,
     FreecamSpeed = 50,
     FreecamSensitivity = 1,
     FreecamCFrame = CFrame.new(),
     FC_Fwd = false, FC_Bwd = false, FC_Left = false, FC_Right = false, FC_Up = false, FC_Down = false,
 
-    -- Spectate State
     SpectateEnabled = false,
     SpectateTargetIndex = 1,
 
@@ -332,7 +337,7 @@ fcUpBtn.Parent = fcUpDownFrame
 Instance.new("UICorner", fcUpBtn).CornerRadius = UDim.new(0, 8)
 
 local fcDownBtn = Instance.new("TextButton")
-fcDownBtn.Size = UDim2.new(0, 40, 0, 40)
+fcDownBtn.Size = UDim2.new(0, 40, 0, 54)
 fcDownBtn.Position = UDim2.new(0.5, -20, 0, 54)
 fcDownBtn.BackgroundColor3 = Color3.fromRGB(20, 28, 45)
 fcDownBtn.Text = "DN"
@@ -682,7 +687,7 @@ contentArea.BackgroundTransparency = 1
 contentArea.Parent = main
 
 local menuVisible = true
-minBtn.MouseButton1Click:Connect(function()
+local function toggleMenuUI()
     menuVisible = not menuVisible
     sidebar.Visible = menuVisible
     contentArea.Visible = menuVisible
@@ -690,7 +695,9 @@ minBtn.MouseButton1Click:Connect(function()
         Size = menuVisible and UDim2.new(0, 420, 0, 260) or UDim2.new(0, 420, 0, 38)
     }):Play()
     minBtn.Text = menuVisible and "-" or "+"
-end)
+end
+
+minBtn.MouseButton1Click:Connect(toggleMenuUI)
 
 local dragging, dragStart, startPos
 topBar.InputBegan:Connect(function(input)
@@ -802,7 +809,7 @@ local function addToggle(parent, text, default, callback)
     end)
 end
 
--- UPGRADED SLIDER / SEEKBAR WITH WHITE KNOB & NEON GLOW ACCENT
+-- UPGRADED SLIDER / SEEKBAR
 local function addSlider(parent, text, min, max, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -6, 0, 30)
@@ -833,7 +840,6 @@ local function addSlider(parent, text, min, max, default, callback)
     valInput.TextXAlignment = Enum.TextXAlignment.Right
     valInput.Parent = frame
 
-    -- Background Track / Jalur Slider
     local track = Instance.new("Frame")
     track.Size = UDim2.new(1, -20, 0, 4)
     track.Position = UDim2.new(0, 10, 0, 20)
@@ -842,7 +848,6 @@ local function addSlider(parent, text, min, max, default, callback)
     track.Parent = frame
     Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
 
-    -- Fill Track (Warna Merah Tema Utama)
     local pct = math.clamp((default - min) / (max - min), 0, 1)
     local fill = Instance.new("Frame")
     fill.Size = UDim2.new(pct, 0, 1, 0)
@@ -851,7 +856,6 @@ local function addSlider(parent, text, min, max, default, callback)
     fill.Parent = track
     Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
 
-    -- Glow Effect pada Fill
     local fillGlow = Instance.new("ImageLabel")
     fillGlow.Size = UDim2.new(1, 10, 1, 10)
     fillGlow.Position = UDim2.new(0, -5, 0, -5)
@@ -861,7 +865,6 @@ local function addSlider(parent, text, min, max, default, callback)
     fillGlow.ImageTransparency = 0.6
     fillGlow.Parent = fill
 
-    -- Knob / Thumb Bulat Putih
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 10, 0, 10)
     knob.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -872,7 +875,6 @@ local function addSlider(parent, text, min, max, default, callback)
     knob.Parent = track
     Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
 
-    -- Outer Glow pada Bulatan Knob
     local knobStroke = Instance.new("UIStroke", knob)
     knobStroke.Color = Color3.fromRGB(255, 45, 65)
     knobStroke.Thickness = 1.5
@@ -946,6 +948,55 @@ local function addSelector(parent, text, options, defaultIndex, callback)
         btn.Text = options[currIndex] .. " ▼"
         callback(options[currIndex])
     end)
+end
+
+-- KEYBIND BINDING COMPONENT
+local function addKeybind(parent, text, defaultKey, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -6, 0, 26)
+    frame.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
+    frame.BackgroundTransparency = 0.3
+    frame.Parent = parent
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 5)
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.55, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 8, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.Font = Enum.Font.GothamMedium
+    lbl.TextColor3 = Color3.fromRGB(220, 225, 240)
+    lbl.TextSize = 9
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = frame
+
+    local bindBtn = Instance.new("TextButton")
+    bindBtn.Size = UDim2.new(0, 75, 0, 18)
+    bindBtn.Position = UDim2.new(1, -80, 0.5, -9)
+    bindBtn.BackgroundColor3 = Color3.fromRGB(26, 32, 46)
+    bindBtn.Text = defaultKey.Name
+    bindBtn.TextColor3 = Color3.fromRGB(0, 240, 255)
+    bindBtn.Font = Enum.Font.GothamBold
+    bindBtn.TextSize = 8.5
+    bindBtn.Parent = frame
+    Instance.new("UICorner", bindBtn).CornerRadius = UDim.new(0, 4)
+
+    local listening = false
+    bindBtn.MouseButton1Click:Connect(function()
+        listening = true
+        bindBtn.Text = "..."
+        bindBtn.TextColor3 = Color3.fromRGB(255, 220, 0)
+    end)
+
+    local conn = UserInputService.InputBegan:Connect(function(input, g)
+        if listening and input.UserInputType == Enum.UserInputType.Keyboard then
+            listening = false
+            bindBtn.Text = input.KeyCode.Name
+            bindBtn.TextColor3 = Color3.fromRGB(0, 240, 255)
+            callback(input.KeyCode)
+        end
+    end)
+    table.insert(_G.JelyzxConnections, conn)
 end
 
 -- COLOR PALETTE COMPONENT
@@ -1026,6 +1077,7 @@ local combatTab = createTab("Combat")
 local espTab = createTab("ESP Config")
 local resoTab = createTab("Resolusi")
 local moveTab = createTab("Movement")
+local configTab = createTab("Config")
 
 local colorList = {"Biru Cyan", "Hijau Neon", "Merah", "Kuning", "Ungu", "Pink Neon", "Oranye", "Putih", "Emas", "Lime", "Biru Tua"}
 
@@ -1127,7 +1179,7 @@ addSlider(resoTab, "Curvature / Fisheye Roll", 1, 30, 18, function(v)
 end)
 
 -- MOVEMENT & UTILITY TAB
-addSlider(moveTab, "Walk Speed", 16, 500, 30, function(v) State.WalkSpeedVal = v end)
+addSlider(moveTab, "Walk Speed", 16, 500, 50, function(v) State.WalkSpeedVal = v end)
 addSlider(moveTab, "Jump Power", 50, 1000, 100, function(v) State.JumpPowerVal = v end)
 
 addToggle(moveTab, "Super Smooth Movement", false, function(v) State.SmoothMovement = v end)
@@ -1168,6 +1220,148 @@ end)
 
 addToggle(moveTab, "Spinbot Karakter (Muter)", false, function(v) State.SpinBotEnabled = v end)
 addSlider(moveTab, "Kecepatan Muter (Spin)", 10, 300, 50, function(v) State.SpinSpeed = v end)
+
+-- CONFIG TAB (FITUR BARU)
+addKeybind(configTab, "Tecla do Menu (Menu Key)", Enum.KeyCode.Insert, function(key)
+    State.MenuKey = key
+end)
+
+addKeybind(configTab, "Tecla do Aimbot (Aimbot Key)", Enum.KeyCode.Insert, function(key)
+    State.AimbotKey = key
+end)
+
+-- PLAYER PROFILE CARD AUTO DETECT
+local profileCard = Instance.new("Frame")
+profileCard.Size = UDim2.new(1, -6, 0, 54)
+profileCard.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
+profileCard.BackgroundTransparency = 0.3
+profileCard.Parent = configTab
+Instance.new("UICorner", profileCard).CornerRadius = UDim.new(0, 6)
+
+local pImg = Instance.new("ImageLabel")
+pImg.Size = UDim2.new(0, 38, 0, 38)
+pImg.Position = UDim2.new(0, 8, 0.5, -19)
+pImg.BackgroundColor3 = Color3.fromRGB(25, 30, 45)
+pImg.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150"
+pImg.Parent = profileCard
+Instance.new("UICorner", pImg).CornerRadius = UDim.new(1, 0)
+
+local pName = Instance.new("TextLabel")
+pName.Size = UDim2.new(1, -55, 0, 16)
+pName.Position = UDim2.new(0, 52, 0, 8)
+pName.BackgroundTransparency = 1
+pName.Text = LocalPlayer.Name .. " (@" .. LocalPlayer.DisplayName .. ")"
+pName.Font = Enum.Font.GothamBold
+pName.TextColor3 = Color3.fromRGB(255, 255, 255)
+pName.TextSize = 9.5
+pName.TextXAlignment = Enum.TextXAlignment.Left
+pName.Parent = profileCard
+
+local pStatus = Instance.new("TextLabel")
+pStatus.Size = UDim2.new(1, -55, 0, 14)
+pStatus.Position = UDim2.new(0, 52, 0, 26)
+pStatus.BackgroundTransparency = 1
+pStatus.Text = "🟢 Script Ativo | ANJY223"
+pStatus.Font = Enum.Font.GothamMedium
+pStatus.TextColor3 = Color3.fromRGB(0, 255, 150)
+pStatus.TextSize = 8.5
+pStatus.TextXAlignment = Enum.TextXAlignment.Left
+pStatus.Parent = profileCard
+
+-- WHATSAPP CHANNEL CARD
+local waCard = Instance.new("Frame")
+waCard.Size = UDim2.new(1, -6, 0, 48)
+waCard.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
+waCard.BackgroundTransparency = 0.3
+waCard.Parent = configTab
+Instance.new("UICorner", waCard).CornerRadius = UDim.new(0, 6)
+
+local waIconHolder = Instance.new("Frame")
+waIconHolder.Size = UDim2.new(0, 32, 0, 32)
+waIconHolder.Position = UDim2.new(0, 8, 0.5, -16)
+waIconHolder.BackgroundColor3 = Color3.fromRGB(20, 30, 25)
+waIconHolder.BorderSizePixel = 0
+waIconHolder.Parent = waCard
+Instance.new("UICorner", waIconHolder).CornerRadius = UDim.new(0, 6)
+
+local waImg = Instance.new("ImageLabel")
+waImg.Size = UDim2.new(1, -4, 1, -4)
+waImg.Position = UDim2.new(0, 2, 0, 2)
+waImg.BackgroundTransparency = 1
+waImg.Image = WA_LOGO_ID
+waImg.Parent = waIconHolder
+Instance.new("UICorner", waImg).CornerRadius = UDim.new(0, 4)
+
+local waTitle = Instance.new("TextLabel")
+waTitle.Size = UDim2.new(1, -125, 0, 16)
+waTitle.Position = UDim2.new(0, 46, 0, 8)
+waTitle.BackgroundTransparency = 1
+waTitle.Text = "Saluran WhatsApp"
+waTitle.Font = Enum.Font.GothamBold
+waTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+waTitle.TextSize = 9.5
+waTitle.TextXAlignment = Enum.TextXAlignment.Left
+waTitle.Parent = waCard
+
+local waSubText = Instance.new("TextLabel")
+waSubText.Size = UDim2.new(1, -125, 0, 14)
+waSubText.Position = UDim2.new(0, 46, 0, 24)
+waSubText.BackgroundTransparency = 1
+waSubText.Text = "Klik untuk menyalin tautan"
+waSubText.Font = Enum.Font.GothamMedium
+waSubText.TextColor3 = Color3.fromRGB(150, 160, 180)
+waSubText.TextSize = 7.5
+waSubText.TextXAlignment = Enum.TextXAlignment.Left
+waSubText.Parent = waCard
+
+local waCopyBtn = Instance.new("TextButton")
+waCopyBtn.Size = UDim2.new(0, 65, 0, 24)
+waCopyBtn.Position = UDim2.new(1, -72, 0.5, -12)
+waCopyBtn.BackgroundColor3 = Color3.fromRGB(37, 211, 102)
+waCopyBtn.Text = "COPY"
+waCopyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+waCopyBtn.Font = Enum.Font.GothamBlack
+waCopyBtn.TextSize = 9
+waCopyBtn.Parent = waCard
+Instance.new("UICorner", waCopyBtn).CornerRadius = UDim.new(0, 6)
+
+waCopyBtn.MouseButton1Click:Connect(function()
+    SetClipboard("https://whatsapp.com/channel/0029VbC9yKk3WHTOatMIGM0X")
+    waCopyBtn.Text = "COPIED!"
+    waCopyBtn.BackgroundColor3 = Color3.fromRGB(0, 240, 255)
+    task.wait(2)
+    waCopyBtn.Text = "COPY"
+    waCopyBtn.BackgroundColor3 = Color3.fromRGB(37, 211, 102)
+end)
+
+-- GLOBAL KEYBIND EVENT HANDLER FOR PC/LAPTOP
+local globalKeyConn = UserInputService.InputBegan:Connect(function(input, g)
+    if g or not State.ScriptActive then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == State.MenuKey then
+            toggleMenuUI()
+        end
+        if input.KeyCode == State.AimbotKey then
+            State.AimbotHoldKey = true
+            State.AimbotEnabled = true
+            State.DirectLock = true   -- AKTIFKAN INSTANT LOCK
+            State.WallCheck = true    -- AKTIFKAN WALL CHECK
+            State.FOVRadius = 50      -- SET FOV RADIUS KE 50
+        end
+    end
+end)
+table.insert(_G.JelyzxConnections, globalKeyConn)
+
+local globalKeyEndedConn = UserInputService.InputEnded:Connect(function(input, g)
+    if not State.ScriptActive then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == State.AimbotKey and State.AimbotHoldKey then
+            State.AimbotHoldKey = false
+            State.AimbotEnabled = false
+        end
+    end
+end)
+table.insert(_G.JelyzxConnections, globalKeyEndedConn)
 
 -- FREECAM ROTATION TOUCH LOGIC
 local isTouchDragging = false
