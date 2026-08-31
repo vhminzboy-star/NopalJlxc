@@ -469,10 +469,9 @@ bgLogoOld.ImageTransparency = 0.20
 bgLogoOld.ScaleType = Enum.ScaleType.Fit
 bgLogoOld.Parent = introCard
 
--- LOGO BARU POSITION (POSISI LEBIH KE ATAS)
 local showcaseLogo = Instance.new("ImageLabel")
 showcaseLogo.Size = UDim2.new(0, 0, 0, 0)
-showcaseLogo.Position = UDim2.new(0.5, 0, 0, 2) -- Ditinggikan ke paling atas
+showcaseLogo.Position = UDim2.new(0.5, 0, 0, 2)
 showcaseLogo.AnchorPoint = Vector2.new(0.5, 0)
 showcaseLogo.BackgroundTransparency = 1
 showcaseLogo.Image = SHOWCASE_LOGO_ID
@@ -905,6 +904,79 @@ local function addSelector(parent, text, options, defaultIndex, callback)
     end)
 end
 
+-- COLOR PALETTE COMPONENT (BULATAN WARNA SAMA KAYAK GAMBAR BARU + RAINBOW TOGGLE)
+local function addColorPalette(parent, titleText, colorListOptions, onColorSelect, onRainbowToggle)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -6, 0, 68)
+    frame.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
+    frame.BackgroundTransparency = 0.3
+    frame.Parent = parent
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 5)
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, -12, 0, 16)
+    lbl.Position = UDim2.new(0, 8, 0, 4)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = titleText
+    lbl.Font = Enum.Font.GothamMedium
+    lbl.TextColor3 = Color3.fromRGB(220, 225, 240)
+    lbl.TextSize = 9
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = frame
+
+    local gridContainer = Instance.new("Frame")
+    gridContainer.Size = UDim2.new(1, -16, 0, 42)
+    gridContainer.Position = UDim2.new(0, 8, 0, 22)
+    gridContainer.BackgroundTransparency = 1
+    gridContainer.Parent = frame
+
+    local gridLayout = Instance.new("UIGridLayout")
+    gridLayout.CellSize = UDim2.new(0, 18, 0, 18)
+    gridLayout.CellPadding = UDim2.new(0, 6, 0, 5)
+    gridLayout.FillDirection = Enum.FillDirection.Horizontal
+    gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    gridLayout.Parent = gridContainer
+
+    local activeStroke = nil
+
+    local function selectColorBtn(btn, stroke, color, isRgb)
+        if activeStroke then activeStroke.Enabled = false end
+        activeStroke = stroke
+        activeStroke.Enabled = true
+        playSound(SOUND_TOGGLE_ON, 0.4)
+        
+        if isRgb then
+            if onRainbowToggle then onRainbowToggle(true) end
+        else
+            if onRainbowToggle then onRainbowToggle(false) end
+            if onColorSelect then onColorSelect(color) end
+        end
+    end
+
+    for idx, item in ipairs(colorListOptions) do
+        local colorBtn = Instance.new("TextButton")
+        colorBtn.Size = UDim2.new(0, 18, 0, 18)
+        colorBtn.BackgroundColor3 = item.Color
+        colorBtn.Text = item.Name == "RGB" and "🌈" or ""
+        colorBtn.TextSize = 9
+        colorBtn.Parent = gridContainer
+        Instance.new("UICorner", colorBtn).CornerRadius = UDim.new(1, 0)
+
+        local btnStroke = Instance.new("UIStroke", colorBtn)
+        btnStroke.Color = Color3.fromRGB(255, 255, 255)
+        btnStroke.Thickness = 2
+        btnStroke.Enabled = false
+
+        if idx == 1 then
+            selectColorBtn(colorBtn, btnStroke, item.Color, false)
+        end
+
+        colorBtn.MouseButton1Click:Connect(function()
+            selectColorBtn(colorBtn, btnStroke, item.Color, item.Name == "RGB")
+        end)
+    end
+end
+
 -- TABS
 local combatTab = createTab("Combat")
 local espTab = createTab("ESP Config")
@@ -912,6 +984,25 @@ local resoTab = createTab("Resolusi")
 local moveTab = createTab("Movement")
 
 local colorList = {"Biru Cyan", "Hijau Neon", "Merah", "Kuning", "Ungu", "Pink Neon", "Oranye", "Putih", "Emas", "Lime", "Biru Tua"}
+
+local espPaletteList = {
+    {Name = "Putih", Color = Color3.fromRGB(255, 255, 255)},
+    {Name = "Merah", Color = Color3.fromRGB(255, 45, 65)},
+    {Name = "Hijau Neon", Color = Color3.fromRGB(0, 255, 150)},
+    {Name = "Biru Cyan", Color = Color3.fromRGB(0, 240, 255)},
+    {Name = "Kuning", Color = Color3.fromRGB(255, 220, 0)},
+    {Name = "Pink Neon", Color = Color3.fromRGB(255, 20, 147)},
+    {Name = "Oranye", Color = Color3.fromRGB(255, 140, 0)},
+    {Name = "Ungu", Color = Color3.fromRGB(180, 50, 255)},
+    {Name = "Cyan Muda", Color = Color3.fromRGB(80, 220, 255)},
+    {Name = "Magenta", Color = Color3.fromRGB(255, 0, 200)},
+    {Name = "Lime", Color = Color3.fromRGB(50, 205, 50)},
+    {Name = "Emas", Color = Color3.fromRGB(255, 215, 0)},
+    {Name = "Biru Tua", Color = Color3.fromRGB(30, 144, 255)},
+    {Name = "Pink Soft", Color = Color3.fromRGB(255, 150, 200)},
+    {Name = "Hijau Tua", Color = Color3.fromRGB(0, 180, 80)},
+    {Name = "RGB", Color = Color3.fromRGB(30, 30, 30)}
+}
 
 -- COMBAT TAB
 addToggle(combatTab, "Camera Lock (Aimbot)", false, function(v) State.AimbotEnabled = v end)
@@ -960,9 +1051,14 @@ addToggle(espTab, "Health Bar ESP", false, function(v) State.ESP_HealthBar = v e
 addToggle(espTab, "Skeleton ESP", false, function(v) State.ESP_Skeleton = v end)
 addToggle(espTab, "Snapline Tracer", false, function(v) State.ESP_Tracers = v end)
 addSelector(espTab, "Posisi Line Tracer", {"Bawah Tengah", "Tengah Tengah", "Atas Tengah"}, 1, function(v) State.ESP_TracerPos = v end)
-addSelector(espTab, "Warna Utama ESP/Tracer", colorList, 1, function(v)
-    State.ESPColor = ColorMap[v] or Color3.fromRGB(0, 240, 255)
+
+-- WARNA ESP DENGAN PALETTE BULATAN (MIRIP GAMBAR REFF)
+addColorPalette(espTab, "Cor do ESP / Warna ESP", espPaletteList, function(selectedColor)
+    State.ESPColor = selectedColor
+end, function(isRainbow)
+    State.ESPRGB = isRainbow
 end)
+
 addToggle(espTab, "Head Dot ESP", false, function(v) State.ESP_HeadDots = v end)
 addToggle(espTab, "Overhead Name", false, function(v) State.ESP_Names = v end)
 addToggle(espTab, "Team Check", false, function(v) State.ESP_TeamCheck = v end)
