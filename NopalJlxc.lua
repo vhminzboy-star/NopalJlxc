@@ -2205,38 +2205,36 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
     if not State.ScriptActive then return end
     pcall(function()
         local char = LocalPlayer.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not char then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local hrp = char:FindFirstChild("HumanoidRootPart")
 
-            if hum then
-                hum.WalkSpeed = State.WalkSpeedVal
-                hum.UseJumpPower = true
-                hum.JumpPower = State.JumpPowerVal
-            end
+        if hum and hrp then
+            hum.WalkSpeed = State.WalkSpeedVal
+            hum.JumpPower = State.JumpPowerVal
 
-            if State.SmoothMovement and hrp and hum then
+            if State.SmoothMovement then
                 local moveDir = hum.MoveDirection
                 if moveDir.Magnitude > 0 then
-                    local targetVel = moveDir * State.WalkSpeedVal
-                    hrp.AssemblyLinearVelocity = hrp.AssemblyLinearVelocity:Lerp(Vector3.new(targetVel.X, hrp.AssemblyLinearVelocity.Y, targetVel.Z), State.SmoothFactor)
+                    hrp.AssemblyLinearVelocity = Vector3.new(
+                        moveDir.X * State.WalkSpeedVal,
+                        hrp.AssemblyLinearVelocity.Y,
+                        moveDir.Z * State.WalkSpeedVal
+                    )
                 end
             end
 
-            if State.FiveMBlink and hrp then
-                blinkCounter = blinkCounter + 1
-                if blinkCounter % State.BlinkIntensity == 0 then
-                    local originalCFrame = hrp.CFrame
-                    local offset = Vector3.new((math.random() - 0.5) * 6, 0, (math.random() - 0.5) * 6)
-                    
-                    hrp.CFrame = hrp.CFrame + offset
-                    RunService.Heartbeat:Wait()
-                    hrp.CFrame = originalCFrame
+            if State.FiveMBlink then
+                blinkCounter = blinkCounter + deltaTime
+                if blinkCounter >= 0.12 then
+                    blinkCounter = 0
+                    local offset = Vector3.new(math.random(-State.BlinkIntensity, State.BlinkIntensity), 0, math.random(-State.BlinkIntensity, State.BlinkIntensity))
+                    hrp.CFrame = hrp.CFrame + (offset * 0.1)
                 end
             end
 
-            if State.SpinBotEnabled and hrp then
-                spinAngle = (spinAngle + (State.SpinSpeed * deltaTime * 10)) % 360
+            if State.SpinBotEnabled then
+                spinAngle = (spinAngle + (State.SpinSpeed * 5 * deltaTime)) % 360
                 hrp.CFrame = CFrame.new(hrp.Position) * CFrame.Angles(0, math.rad(spinAngle), 0)
             end
 
@@ -2246,34 +2244,29 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
                 end
             end
 
-            if State.FlyEnabled and hrp and hum then
-                if not flyBodyVelocity or flyBodyVelocity.Parent ~= hrp then
+            if State.FlyEnabled then
+                if not flyBodyVelocity or not flyBodyVelocity.Parent then
                     flyBodyVelocity = Instance.new("BodyVelocity")
-                    flyBodyVelocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-                    flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                    flyBodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
                     flyBodyVelocity.Parent = hrp
                 end
-
-                if not flyBodyGyro or flyBodyGyro.Parent ~= hrp then
+                if not flyBodyGyro or not flyBodyGyro.Parent then
                     flyBodyGyro = Instance.new("BodyGyro")
-                    flyBodyGyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-                    flyBodyGyro.CFrame = hrp.CFrame
+                    flyBodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
                     flyBodyGyro.Parent = hrp
                 end
 
-                local moveDir = hum.MoveDirection
-                local targetYVelocity = 0
+                local camCFrame = Camera.CFrame
+                local flyDir = Vector3.new()
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then flyDir = flyDir + camCFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then flyDir = flyDir - camCFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then flyDir = flyDir - camCFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then flyDir = flyDir + camCFrame.RightVector end
+                if State.FlyUp or UserInputService:IsKeyDown(Enum.KeyCode.Space) then flyDir = flyDir + Vector3.new(0, 1, 0) end
+                if State.FlyDown or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then flyDir = flyDir - Vector3.new(0, 1, 0) end
 
-                if State.FlyUp or UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                    targetYVelocity = State.FlySpeed
-                elseif State.FlyDown or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-                    targetYVelocity = -State.FlySpeed
-                else
-                    targetYVelocity = 0
-                end
-
-                flyBodyVelocity.Velocity = Vector3.new(moveDir.X * State.FlySpeed, targetYVelocity, moveDir.Z * State.FlySpeed)
-                flyBodyGyro.CFrame = Camera.CFrame
+                flyBodyVelocity.Velocity = flyDir * State.FlySpeed
+                flyBodyGyro.CFrame = camCFrame
             else
                 if flyBodyVelocity then flyBodyVelocity:Destroy(); flyBodyVelocity = nil end
                 if flyBodyGyro then flyBodyGyro:Destroy(); flyBodyGyro = nil end
@@ -2283,31 +2276,28 @@ local stepConn = RunService.Stepped:Connect(function(_, deltaTime)
 end)
 table.insert(_G.JelyzxConnections, stepConn)
 
--- ANTI AFK
-LocalPlayer.Idled:Connect(function()
+-- ANTI AFK SYSTEM
+local antiAfkConn = LocalPlayer.Idled:Connect(function()
     if State.AntiAFK then
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
+        VirtualUser:Button2Down(Vector2.new(0, 0), Camera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0, 0), Camera.CFrame)
     end
 end)
+table.insert(_G.JelyzxConnections, antiAfkConn)
 
--- CLEANUP
+-- CLOSE BUTTON HANDLER
 closeBtn.MouseButton1Click:Connect(function()
     State.ScriptActive = false
-    fovCircle.Visible = false
-    hideAllCrosshair()
-    pcall(function() 
-        fovCircle:Remove()
-        for _, l in ipairs(chLines) do l:Remove() end
-        for _, l in ipairs(hitLines) do l:Remove() end
-        chCircle:Remove()
-    end)
-    if flyBodyVelocity then flyBodyVelocity:Destroy() end
-    if flyBodyGyro then flyBodyGyro:Destroy() end
-    Camera.CameraType = Enum.CameraType.Custom
-    Camera.FieldOfView = 70
-    for _, conn in ipairs(_G.JelyzxConnections) do pcall(function() conn:Disconnect() end) end
-    table.clear(_G.JelyzxConnections)
-    for plr in pairs(ESPObjects) do removePlayerESP(plr) end
-    gui:Destroy()
+    for _, conn in ipairs(_G.JelyzxConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    for _, data in pairs(ESPObjects) do
+        for _, obj in pairs(data.Drawing) do pcall(function() obj:Remove() end) end
+    end
+    for _, l in ipairs(hitLines) do pcall(function() l:Remove() end) end
+    for _, l in ipairs(chLines) do pcall(function() l:Remove() end) end
+    pcall(function() fovCircle:Remove() end)
+    pcall(function() chCircle:Remove() end)
+    pcall(function() gui:Destroy() end)
 end)
