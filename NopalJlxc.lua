@@ -45,10 +45,14 @@ local parentGui = getGuiParent()
 local oldGui = parentGui:FindFirstChild("JELYZX_V20_FULL_GUI") or LocalPlayer.PlayerGui:FindFirstChild("JELYZX_V20_FULL_GUI")
 if oldGui then oldGui:Destroy() end
 
--- ASSETS ID
+-- ASSETS ID UPDATED
 local RAW_ID = "111989994218720"
 local SHOWCASE_ID = "129775661697970"
 local WA_ICON_ID = "129838440163232"
+local LOGO_ICON_ID = "rbxassetid://6146973701"
+local LOGO_HIDE_ID = "rbxassetid://102976018150012"
+local LOGO_CLOSE_ID = "rbxassetid://132261474823036"
+
 local CUSTOM_LOGO_ID = "rbxthumb://type=Asset&id=" .. RAW_ID .. "&w=420&h=420"
 local SHOWCASE_LOGO_ID = "rbxthumb://type=Asset&id=" .. SHOWCASE_ID .. "&w=420&h=420"
 local WA_LOGO_ID = "rbxthumb://type=Asset&id=" .. WA_ICON_ID .. "&w=420&h=420"
@@ -70,7 +74,6 @@ end
 local SOUND_UI_OPEN = "6112625298"
 local SOUND_TOGGLE_ON = "8486683243"
 local SOUND_TOGGLE_OFF = "131390520971848"
-local SOUND_HITMARKER = "8632670510"
 
 local ColorMap = {
     ["Biru Cyan"]  = Color3.fromRGB(0, 240, 255),
@@ -123,7 +126,6 @@ local State = {
     ESPColor = Color3.fromRGB(0, 240, 255),
     ESPRGB = false,
 
-    -- FITUR BARU: ESP UPGRADES
     ESP_GradientBox = false,
     ESP_FilledBox = false,
 
@@ -132,6 +134,8 @@ local State = {
 
     HitMarker = false,
     HitSound = false,
+    CustomHitSoundId = "8632670510",
+    HitMarkerSize = 8,
 
     LYR360Enabled = false,
     LYR360Val = 135,
@@ -202,11 +206,11 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Parent = parentGui
 
--- FLOATING NOTIFICATION SYSTEM
+-- FLOATING NOTIFICATION SYSTEM (UPGRADED HIGH-TECH LOOK)
 local notificationHolder = Instance.new("Frame")
 notificationHolder.Name = "NotificationContainer"
-notificationHolder.Size = UDim2.new(0, 240, 1, -20)
-notificationHolder.Position = UDim2.new(1, -250, 0, 10)
+notificationHolder.Size = UDim2.new(0, 260, 1, -20)
+notificationHolder.Position = UDim2.new(1, -270, 0, 10)
 notificationHolder.BackgroundTransparency = 1
 notificationHolder.Parent = gui
 
@@ -219,22 +223,29 @@ notifLayout.Parent = notificationHolder
 local function showNotification(title, msg, duration)
     duration = duration or 3
     local card = Instance.new("Frame")
-    card.Size = UDim2.new(1, 0, 0, 50)
-    card.BackgroundColor3 = Color3.fromRGB(12, 15, 24)
-    card.BackgroundTransparency = 0.2
+    card.Size = UDim2.new(1, 0, 0, 54)
+    card.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
+    card.BackgroundTransparency = 0.15
     card.Position = UDim2.new(1.2, 0, 0, 0)
+    card.ClipsDescendants = true
     card.Parent = notificationHolder
     Instance.new("UICorner", card).CornerRadius = UDim.new(0, 8)
 
     local stroke = Instance.new("UIStroke", card)
-    stroke.Color = Color3.fromRGB(0, 240, 255)
+    stroke.Color = Color3.fromRGB(255, 45, 65)
     stroke.Thickness = 1.2
 
+    local accentLine = Instance.new("Frame")
+    accentLine.Size = UDim2.new(0, 4, 1, 0)
+    accentLine.BackgroundColor3 = Color3.fromRGB(0, 240, 255)
+    accentLine.BorderSizePixel = 0
+    accentLine.Parent = card
+
     local titleLbl = Instance.new("TextLabel")
-    titleLbl.Size = UDim2.new(1, -16, 0, 18)
-    titleLbl.Position = UDim2.new(0, 8, 0, 4)
+    titleLbl.Size = UDim2.new(1, -20, 0, 18)
+    titleLbl.Position = UDim2.new(0, 12, 0, 6)
     titleLbl.BackgroundTransparency = 1
-    titleLbl.Text = title
+    titleLbl.Text = title:upper()
     titleLbl.Font = Enum.Font.GothamBlack
     titleLbl.TextColor3 = Color3.fromRGB(0, 240, 255)
     titleLbl.TextSize = 10
@@ -242,18 +253,29 @@ local function showNotification(title, msg, duration)
     titleLbl.Parent = card
 
     local msgLbl = Instance.new("TextLabel")
-    msgLbl.Size = UDim2.new(1, -16, 0, 22)
-    msgLbl.Position = UDim2.new(0, 8, 0, 22)
+    msgLbl.Size = UDim2.new(1, -20, 0, 22)
+    msgLbl.Position = UDim2.new(0, 12, 0, 22)
     msgLbl.BackgroundTransparency = 1
     msgLbl.Text = msg
     msgLbl.Font = Enum.Font.Gotham
-    msgLbl.TextColor3 = Color3.fromRGB(220, 225, 240)
-    msgLbl.TextSize = 8.5
+    msgLbl.TextColor3 = Color3.fromRGB(240, 245, 255)
+    msgLbl.TextSize = 9
     msgLbl.TextXAlignment = Enum.TextXAlignment.Left
     msgLbl.Parent = card
 
-    TweenService:Create(card, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    local progress = Instance.new("Frame")
+    progress.Size = UDim2.new(1, 0, 0, 2)
+    progress.Position = UDim2.new(0, 0, 1, -2)
+    progress.BackgroundColor3 = Color3.fromRGB(255, 45, 65)
+    progress.BorderSizePixel = 0
+    progress.Parent = card
+
+    TweenService:Create(card, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Position = UDim2.new(0, 0, 0, 0)
+    }):Play()
+
+    TweenService:Create(progress, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+        Size = UDim2.new(0, 0, 0, 2)
     }):Play()
 
     task.spawn(function()
@@ -279,12 +301,12 @@ end
 
 local function triggerHitMarker()
     if State.HitSound then
-        playSound(SOUND_HITMARKER, 0.8)
+        playSound(State.CustomHitSoundId, 0.8)
     end
     if State.HitMarker then
         local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
         local gap = 4
-        local len = 8
+        local len = State.HitMarkerSize
         
         hitLines[1].From = Vector2.new(center.X - gap - len, center.Y - gap - len)
         hitLines[1].To = Vector2.new(center.X - gap, center.Y - gap)
@@ -551,6 +573,49 @@ mainStroke.Color = Color3.fromRGB(255, 45, 65)
 mainStroke.Thickness = 1.8
 mainStroke.Transparency = 0.15
 
+-- FLOATING PARTICLES SYSTEM (BINTIK-BINTIK MELAYANG DI BACKGROUND)
+local particleHolder = Instance.new("Frame")
+particleHolder.Name = "ParticleHolder"
+particleHolder.Size = UDim2.new(1, 0, 1, 0)
+particleHolder.BackgroundTransparency = 1
+particleHolder.ClipsDescendants = true
+particleHolder.Parent = main
+
+local particles = {}
+for i = 1, 20 do
+    local p = Instance.new("Frame")
+    p.Size = UDim2.new(0, math.random(2, 4), 0, math.random(2, 4))
+    p.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    p.BackgroundColor3 = (i % 2 == 0) and Color3.fromRGB(0, 240, 255) or Color3.fromRGB(255, 45, 65)
+    p.BackgroundTransparency = math.random(3, 7) / 10
+    p.BorderSizePixel = 0
+    p.Parent = particleHolder
+    Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
+    
+    table.insert(particles, {
+        Frame = p,
+        SpeedY = math.random(10, 30) / 1000,
+        SpeedX = (math.random(-10, 10)) / 1000
+    })
+end
+
+local particleConn = RunService.RenderStepped:Connect(function()
+    if not main.Visible then return end
+    for _, pt in ipairs(particles) do
+        local currentX = pt.Frame.Position.X.Scale
+        local currentY = pt.Frame.Position.Y.Scale
+        
+        local newY = currentY - pt.SpeedY
+        local newX = currentX + pt.SpeedX
+        
+        if newY < -0.05 then newY = 1.05 end
+        if newX < -0.05 then newX = 1.05 elseif newX > 1.05 then newX = -0.05 end
+        
+        pt.Frame.Position = UDim2.new(newX, 0, newY, 0)
+    end
+end)
+table.insert(_G.JelyzxConnections, particleConn)
+
 -- OVERLAY INTRO
 local introBg = Instance.new("Frame")
 introBg.Name = "IntroOverlay"
@@ -732,25 +797,23 @@ topBar.BackgroundTransparency = 1
 topBar.Parent = main
 
 local logoHolder = Instance.new("Frame")
-logoHolder.Size = UDim2.new(0, 32, 0, 32)
-logoHolder.Position = UDim2.new(0, 8, 0.5, -16)
+logoHolder.Size = UDim2.new(0, 28, 0, 28)
+logoHolder.Position = UDim2.new(0, 8, 0.5, -14)
 logoHolder.BackgroundColor3 = Color3.fromRGB(22, 26, 38)
 logoHolder.BorderSizePixel = 0
 logoHolder.Parent = topBar
 Instance.new("UICorner", logoHolder).CornerRadius = UDim.new(0, 6)
 
 local logoIcon = Instance.new("ImageLabel")
-logoIcon.Size = UDim2.new(1, -4, 1, -4)
-logoIcon.Position = UDim2.new(0, 2, 0, 2)
+logoIcon.Size = UDim2.new(1, 0, 1, 0)
 logoIcon.BackgroundTransparency = 1
-logoIcon.Image = CUSTOM_LOGO_ID
-logoIcon.ImageTransparency = 0
+logoIcon.Image = LOGO_ICON_ID
 logoIcon.Parent = logoHolder
-Instance.new("UICorner", logoIcon).CornerRadius = UDim.new(0, 4)
+Instance.new("UICorner", logoIcon).CornerRadius = UDim.new(0, 6)
 
 local titleLbl = Instance.new("TextLabel")
 titleLbl.Size = UDim2.new(1, -140, 1, 0)
-titleLbl.Position = UDim2.new(0, 46, 0, 0)
+titleLbl.Position = UDim2.new(0, 42, 0, 0)
 titleLbl.BackgroundTransparency = 1
 titleLbl.Font = Enum.Font.GothamBlack
 titleLbl.Text = "NOPAL <font color=\"#FF2D41\">JLXC</font> <font color=\"#6C7B9B\">| BETA CPB JELYZX</font>"
@@ -760,32 +823,30 @@ titleLbl.TextSize = 10
 titleLbl.TextXAlignment = Enum.TextXAlignment.Left
 titleLbl.Parent = topBar
 
-local closeBtn = Instance.new("TextButton")
+-- TOMBOL CLOSE BARU (IMAGE ID 132261474823036)
+local closeBtn = Instance.new("ImageButton")
 closeBtn.Size = UDim2.new(0, 20, 0, 20)
 closeBtn.Position = UDim2.new(1, -28, 0.5, -10)
-closeBtn.BackgroundColor3 = Color3.fromRGB(255, 45, 65)
-closeBtn.Text = "X"
-closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 10
+closeBtn.BackgroundTransparency = 1
+closeBtn.Image = LOGO_CLOSE_ID
 closeBtn.Parent = topBar
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 5)
 
-local minBtn = Instance.new("TextButton")
+-- TOMBOL MINIMIZE / HIDE BARU (IMAGE ID 102976018150012)
+local minBtn = Instance.new("ImageButton")
 minBtn.Size = UDim2.new(0, 20, 0, 20)
-minBtn.Position = UDim2.new(1, -52, 0.5, -10)
-minBtn.BackgroundColor3 = Color3.fromRGB(40, 48, 70)
-minBtn.Text = "-"
-minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-minBtn.Font = Enum.Font.GothamBold
-minBtn.TextSize = 12
+minBtn.Position = UDim2.new(1, -54, 0.5, -10)
+minBtn.BackgroundTransparency = 1
+minBtn.Image = LOGO_HIDE_ID
 minBtn.Parent = topBar
-Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 5)
 
-local sidebar = Instance.new("Frame")
+-- SIDEBAR MENU (SCROLLABLE UNTUK TAB SANGAT BANYAK)
+local sidebar = Instance.new("ScrollingFrame")
 sidebar.Size = UDim2.new(0, 115, 1, -44)
 sidebar.Position = UDim2.new(0, 8, 0, 42)
 sidebar.BackgroundTransparency = 1
+sidebar.ScrollBarThickness = 2
+sidebar.ScrollBarImageColor3 = Color3.fromRGB(0, 240, 255)
+sidebar.AutomaticCanvasSize = Enum.AutomaticSize.Y
 sidebar.Parent = main
 
 local sideLayout = Instance.new("UIListLayout")
@@ -798,7 +859,7 @@ contentArea.Position = UDim2.new(0, 127, 0, 42)
 contentArea.BackgroundTransparency = 1
 contentArea.Parent = main
 
--- FITUR BARU: SEARCH BAR CONTAINER
+-- SEARCH BAR CONTAINER
 local searchBoxFrame = Instance.new("Frame")
 searchBoxFrame.Size = UDim2.new(1, 0, 0, 22)
 searchBoxFrame.Position = UDim2.new(0, 0, 0, 0)
@@ -835,7 +896,6 @@ local function toggleMenuUI()
     TweenService:Create(main, TweenInfo.new(0.2), {
         Size = menuVisible and UDim2.new(0, 420, 0, 260) or UDim2.new(0, 420, 0, 38)
     }):Play()
-    minBtn.Text = menuVisible and "-" or "+"
 end
 
 minBtn.MouseButton1Click:Connect(toggleMenuUI)
@@ -861,7 +921,7 @@ local registeredElements = {}
 
 local function createTab(name)
     local tabBtn = Instance.new("TextButton")
-    tabBtn.Size = UDim2.new(1, 0, 0, 24)
+    tabBtn.Size = UDim2.new(1, -4, 0, 24)
     tabBtn.BackgroundColor3 = Color3.fromRGB(16, 20, 30)
     tabBtn.BackgroundTransparency = 0.4
     tabBtn.Text = name
@@ -972,7 +1032,6 @@ local function addToggle(parent, text, default, callback)
     end)
 end
 
--- UPGRADED SLIDER / SEEKBAR
 local function addSlider(parent, text, min, max, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -6, 0, 30)
@@ -1077,6 +1136,45 @@ local function addSlider(parent, text, min, max, default, callback)
     end)
 end
 
+-- TEXT INPUT FIELD UNTUK CUSTOM SOUND ID
+local function addTextBox(parent, text, defaultText, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -6, 0, 26)
+    frame.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
+    frame.BackgroundTransparency = 0.3
+    frame.Parent = parent
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 5)
+
+    table.insert(registeredElements, {Text = text, Frame = frame})
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.55, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 8, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.Font = Enum.Font.GothamMedium
+    lbl.TextColor3 = Color3.fromRGB(220, 225, 240)
+    lbl.TextSize = 9
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = frame
+
+    local inputTxt = Instance.new("TextBox")
+    inputTxt.Size = UDim2.new(0.4, 0, 0, 18)
+    inputTxt.Position = UDim2.new(1, -105, 0.5, -9)
+    inputTxt.BackgroundColor3 = Color3.fromRGB(26, 32, 46)
+    inputTxt.Text = defaultText
+    inputTxt.TextColor3 = Color3.fromRGB(0, 240, 255)
+    inputTxt.Font = Enum.Font.GothamBold
+    inputTxt.TextSize = 8.5
+    inputTxt.Parent = frame
+    Instance.new("UICorner", inputTxt).CornerRadius = UDim.new(0, 4)
+
+    inputTxt.FocusLost:Connect(function()
+        callback(inputTxt.Text)
+        showNotification("Hit Sound Updated", "Custom Sound ID set to " .. inputTxt.Text, 2)
+    end)
+end
+
 local function addSelector(parent, text, options, defaultIndex, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -6, 0, 24)
@@ -1117,7 +1215,6 @@ local function addSelector(parent, text, options, defaultIndex, callback)
     end)
 end
 
--- KEYBIND BINDING COMPONENT
 local function addKeybind(parent, text, defaultKey, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -6, 0, 26)
@@ -1168,7 +1265,6 @@ local function addKeybind(parent, text, defaultKey, callback)
     table.insert(_G.JelyzxConnections, conn)
 end
 
--- COLOR PALETTE COMPONENT
 local function addColorPalette(parent, titleText, colorListOptions, onColorSelect, onRainbowToggle)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -6, 0, 68)
@@ -1285,7 +1381,9 @@ addSelector(combatTab, "Warna FOV Circle", colorList, 1, function(v)
 end)
 
 addToggle(combatTab, "Hit Marker UI", false, function(v) State.HitMarker = v end)
+addSlider(combatTab, "Hit Marker Size", 4, 20, 8, function(v) State.HitMarkerSize = v end)
 addToggle(combatTab, "Hit Sound Feedback", false, function(v) State.HitSound = v end)
+addTextBox(combatTab, "Custom Sound ID", "8632670510", function(v) State.CustomHitSoundId = v end)
 
 addToggle(combatTab, "Invisible Mode (Full Ghost)", false, function(v) 
     State.InvisibleMode = v 
@@ -1747,7 +1845,6 @@ local function setupPlayerESP(plr)
         C7 = createDrawing("Line", {Thickness = 1.5, Visible = false}),
         C8 = createDrawing("Line", {Thickness = 1.5, Visible = false}),
 
-        -- FITUR BARU: FILLED ANIMATED BOX & GRADIENT ESP DRAWINGS
         FilledBox = createDrawing("Square", {Thickness = 0, Filled = true, Transparency = 0.35, Visible = false}),
 
         HealthBarOutline = createDrawing("Square", {Thickness = 1, Filled = true, Color = Color3.fromRGB(0, 0, 0), Visible = false}),
@@ -1844,7 +1941,6 @@ local function updateESPPosition()
                 local width = height * 0.65
                 local minX, minY = hrpPos.X - (width / 2), headPos.Y
 
-                -- FITUR BARU: FILLED ANIMATED BOX & GRADIENT BOX ESP
                 if State.ESP_FilledBox or State.ESP_GradientBox then
                     draw.FilledBox.Size = Vector2.new(width, height)
                     draw.FilledBox.Position = Vector2.new(minX, minY)
