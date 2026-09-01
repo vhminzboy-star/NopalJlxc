@@ -1,8 +1,3 @@
--- ========================================================
--- NOPAL JLXC — BETA CPB JELYZX (FULL FEATURE INTEGRATED + UPGRADED)
--- Showcase Logo: https://create.roblox.com/store/asset/129775661697970
--- Background Logo: https://create.roblox.com/store/asset/111989994218720
--- ========================================================
 if _G.JelyzxConnections then
     for _, conn in ipairs(_G.JelyzxConnections) do
         pcall(function() conn:Disconnect() end)
@@ -49,7 +44,7 @@ if oldGui then oldGui:Destroy() end
 local RAW_ID = "111989994218720"
 local SHOWCASE_ID = "129775661697970"
 local WA_ICON_ID = "129838440163232"
-local LOGO_ICON_ID = "rbxassetid://6146973701"
+local LOGO_ICON_ID = "rbxassetid://111989994218720"
 local LOGO_HIDE_ID = "rbxassetid://102976018150012"
 local LOGO_CLOSE_ID = "rbxassetid://132261474823036"
 
